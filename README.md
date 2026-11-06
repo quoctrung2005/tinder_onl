@@ -1,4 +1,4 @@
-# 🔥 Tinder Web Clone - Fullstack Dating Platform with Neo4j Graph Database
+# 🔥 Match Web  - Fullstack Dating Platform with Neo4j Graph Database
 
 > **Ứng dụng hẹn hò trực tuyến chuẩn Tinder Web** được xây dựng bằng kiến trúc Fullstack hiện đại kết hợp Cơ sở dữ liệu Đồ thị **Neo4j AuraDB (Cloud)**, Real-time Engine **Socket.io**, **Node.js/Express (TypeScript)** và Frontend **React 19, Tailwind CSS v4, Framer Motion**.
 
