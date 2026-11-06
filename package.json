@@ -1,0 +1,10 @@
+{
+  "name": "tinder-onl-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run build && npx --prefix server ts-node server/src/scripts/seed.ts"
+  }
+}
