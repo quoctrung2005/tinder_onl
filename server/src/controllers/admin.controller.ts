@@ -270,7 +270,7 @@ export const createAdminUser = async (req: Request, res: Response) => {
 // 4. Cập nhật thông tin Người dùng (Admin Edit User)
 export const updateAdminUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, age, gender, city, bio, job, company, role, relationship_goal, is_verified, is_banned } = req.body;
+  const { name, age, gender, city, bio, job, company, role, relationship_goal, is_verified, is_banned, photos } = req.body;
   const session = getDriver().session();
 
   try {
@@ -286,7 +286,8 @@ export const updateAdminUser = async (req: Request, res: Response) => {
           u.role = coalesce($role, u.role),
           u.relationship_goal = coalesce($relationship_goal, u.relationship_goal),
           u.is_verified = coalesce($is_verified, u.is_verified),
-          u.is_banned = coalesce($is_banned, u.is_banned)
+          u.is_banned = coalesce($is_banned, u.is_banned),
+          u.photos = CASE WHEN $photos IS NOT NULL THEN $photos ELSE u.photos END
       RETURN u {.*, role: coalesce(u.role, 'user')} AS user
     `, {
       id,
@@ -300,7 +301,8 @@ export const updateAdminUser = async (req: Request, res: Response) => {
       role: role ?? null,
       relationship_goal: relationship_goal ?? null,
       is_verified: typeof is_verified === 'boolean' ? is_verified : null,
-      is_banned: typeof is_banned === 'boolean' ? is_banned : null
+      is_banned: typeof is_banned === 'boolean' ? is_banned : null,
+      photos: Array.isArray(photos) ? photos : null
     });
 
     if (result.records.length === 0) {

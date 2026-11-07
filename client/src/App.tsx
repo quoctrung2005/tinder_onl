@@ -351,6 +351,9 @@ export function App() {
         onOpenProfile={(user) => setSelectedProfileForModal(user)}
         shortcutsEnabled={shortcutsEnabled}
         onToggleShortcuts={() => setShortcutsEnabled((prev) => !prev)}
+        onOpenVipCheckout={() => setIsVipCheckoutOpen(true)}
+        onOpenPassport={() => setIsPassportOpen(true)}
+        onOpenPhotoVerify={() => setIsPhotoVerifyOpen(true)}
       />
 
       {/* 2. Main Stage bên phải */}

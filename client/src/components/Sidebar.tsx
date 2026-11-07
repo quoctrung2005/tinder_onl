@@ -407,18 +407,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             )}
 
-            {/* 2. BA PHÍM TẮT TIỆN ÍCH: PASSPORT, TÍCH XANH, AN TOÀN */}
-            <div className="grid grid-cols-3 gap-1.5 mt-2">
+            {/* 2. HAI PHÍM TẮT TIỆN ÍCH: PASSPORT & TÍCH XANH AI (An toàn đã có trên header) */}
+            <div className="grid grid-cols-2 gap-2 mt-2">
               {onOpenPassport && (
                 <button
                   type="button"
                   onClick={onOpenPassport}
-                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-cyan-500/50 text-neutral-300 hover:text-cyan-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
+                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-cyan-500/50 text-neutral-300 hover:text-cyan-300 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm group"
                   title="Hộ chiếu Match Passport™ - Đổi địa điểm khám phá toàn cầu"
                 >
-                  <Globe className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold truncate max-w-full">
-                    Passport
+                  <Globe className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="text-[11px] font-bold truncate">
+                    Match Passport™
                   </span>
                 </button>
               )}
@@ -427,26 +427,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={onOpenPhotoVerify}
-                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-blue-500/50 text-neutral-300 hover:text-blue-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
-                  title="Xác minh khuôn mặt AI - Nhận huy hiệu tích xanh"
+                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-blue-500/50 text-neutral-300 hover:text-blue-300 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm group"
+                  title="Xác minh khuôn mặt AI - Nhận huy hiệu tích xanh chính chủ"
                 >
-                  <ShieldCheck className={`w-4 h-4 group-hover:scale-110 transition-transform ${currentUser?.is_verified ? 'text-blue-400' : 'text-amber-400'}`} />
-                  <span className="text-[10px] font-bold truncate max-w-full">
+                  <ShieldCheck className={`w-4 h-4 group-hover:scale-110 transition-transform shrink-0 ${currentUser?.is_verified ? 'text-blue-400' : 'text-amber-400'}`} />
+                  <span className="text-[11px] font-bold truncate">
                     {currentUser?.is_verified ? 'Đã Tích Xanh' : 'Tích Xanh AI'}
-                  </span>
-                </button>
-              )}
-
-              {onOpenSafetyToolkit && (
-                <button
-                  type="button"
-                  onClick={onOpenSafetyToolkit}
-                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-rose-500/50 text-neutral-300 hover:text-rose-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
-                  title="Bộ công cụ an toàn: Báo cáo, mẹo hẹn hò, chặn liên hệ"
-                >
-                  <Shield className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-bold truncate max-w-full">
-                    An Toàn
                   </span>
                 </button>
               )}

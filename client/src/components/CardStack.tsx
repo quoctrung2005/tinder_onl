@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
 import type { UserProfile } from '../types';
 import { MatchCard } from './TinderCard';
-import { RotateCcw, X, Star, Heart, RefreshCw, Send, Zap } from 'lucide-react';
+import { RotateCcw, X, Star, Heart, RefreshCw, Send, Zap, Crown, Globe } from 'lucide-react';
 import { AntigravityCanvas } from './AntigravityCanvas';
 
 interface Particle {
@@ -44,6 +44,7 @@ interface CardStackProps {
   canRewind: boolean;
   onReload: () => void;
   onTriggerBoost?: () => void;
+  onOpenVipCheckout?: () => void;
 }
 
 export const CardStack: React.FC<CardStackProps> = ({
@@ -53,7 +54,8 @@ export const CardStack: React.FC<CardStackProps> = ({
   onRewind,
   canRewind,
   onReload,
-  onTriggerBoost
+  onTriggerBoost,
+  onOpenVipCheckout
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [swipeExitDir, setSwipeExitDir] = useState<'left' | 'right' | 'up' | null>(null);
@@ -237,6 +239,30 @@ export const CardStack: React.FC<CardStackProps> = ({
 
       {/* KHỐI TRUNG TÂM GỒM CARD VÀ 5 NÚT NGAY DƯỚI HÌNH (GỌN GÀNG, KHÔNG BỊ TRỐNG ĐEN LỚN) */}
       <div className="flex flex-col items-center justify-center w-full max-w-[390px] relative my-auto">
+        {/* NÚT ĐĂNG KÝ VIP TRỰC TIẾP TRÊN BẢNG QUẸT THẺ (MAIN SCREEN) */}
+        {onOpenVipCheckout && (
+          <div className="w-full flex items-center justify-between mb-2.5 px-1">
+            <button
+              type="button"
+              onClick={onOpenVipCheckout}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 via-rose-500/20 to-amber-500/25 hover:from-amber-500/35 hover:to-rose-500/30 border border-amber-400/60 hover:border-amber-400 text-amber-300 text-xs font-black shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95 group"
+            >
+              <Crown className="w-4 h-4 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span>{currentUser?.is_gold ? `Match ${currentUser.vip_level || 'Gold'} (VIP Đang Bật)` : 'Đăng Ký Match Gold™ VIP'}</span>
+              <span className="text-[9px] bg-amber-400 text-neutral-950 font-black px-1.5 py-0.2 rounded-full ml-1">
+                {currentUser?.is_gold ? 'VIP' : 'ƯU ĐÃI'}
+              </span>
+            </button>
+
+            {currentUser?.city && (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-300 bg-neutral-900/90 px-3 py-1.5 rounded-full border border-neutral-800">
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{currentUser.city}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* VÙNG THẺ CARD */}
         <div className="relative w-full h-[520px] sm:h-[550px] md:h-[580px]">
           {cards.length > 0 ? (
@@ -265,11 +291,11 @@ export const CardStack: React.FC<CardStackProps> = ({
                   onSwipe={(dir: 'left' | 'right' | 'up') => {
                     spawnParticles(dir === 'right' ? 'like' : dir === 'up' ? 'super' : 'nope');
                     setSwipeExitDir(dir);
-                    dragX.set(0);
-                    dragY.set(0);
                     setTimeout(() => {
                       onSwipe(dir);
                       setSwipeExitDir(null);
+                      dragX.set(0);
+                      dragY.set(0);
                     }, 180);
                   }}
                   showDetailsModal={showDetails}

@@ -34,7 +34,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
   dragY
 }) => {
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
 
   // Phản hồi phím tắt N (tiếp theo) và M (quay lại)
   React.useEffect(() => {
@@ -62,9 +61,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
   // Xử lý cử chỉ quẹt kết hợp cả khoảng cách (offset) và tốc độ vung tay (velocity)
   const handleDragEnd = (_: any, info: PanInfo) => {
-    setIsDragging(false);
-    const threshold = 95;
-    const velocityThreshold = 420;
+    const threshold = 60;
+    const velocityThreshold = 220;
 
     if (info.offset.x > threshold || info.velocity.x > velocityThreshold) {
       onSwipe('right');
@@ -157,10 +155,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     <>
       <motion.div
         style={{ x, y, rotate }}
-        drag
-        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.75}
-        onDragStart={() => setIsDragging(true)}
+        drag="x"
+        dragSnapToOrigin={true}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.65}
         onDragEnd={handleDragEnd}
         variants={cardVariants}
         initial="initial"
@@ -184,7 +182,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         <img
           src={profile.photos[photoIndex] || profile.photos[0]}
           alt={profile.name}
-          className="w-full h-full object-cover pointer-events-none"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80";
+          }}
+          className="w-full h-full object-cover pointer-events-none select-none"
         />
 
         {/* 1. THANH VẠCH TIẾN TRÌNH TRẮNG Ở ĐỈNH THẺ */}
@@ -246,13 +247,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           </button>
         )}
 
-        {/* VÙNG BẤM TÀNG HÌNH NỬA TRÁI / NỬA PHẢI ĐỂ CHUYỂN ẢNH KHI KHÔNG KÉO */}
-        {!isDragging && (
-          <div className="absolute inset-0 z-10 flex">
-            <div onClick={prevPhoto} className="w-1/2 h-3/4" />
-            <div onClick={nextPhoto} className="w-1/2 h-3/4" />
-          </div>
-        )}
+
 
         {/* TEM LIKE CHUẨN TINDER */}
         <motion.div
