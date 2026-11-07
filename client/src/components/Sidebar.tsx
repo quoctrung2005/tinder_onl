@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { UserProfile } from '../types';
 import {
   Zap, Compass, Briefcase, Shield, CheckCircle, Search, Heart, ExternalLink, Sliders, MessageCircle,
-  Globe, Crown, ShieldCheck
+  Globe, Crown, ShieldCheck, Sparkles
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -378,6 +378,81 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ) : (
         /* CHẾ ĐỘ THƯỜNG: TABS CÁC TƯƠNG HỢP & TIN NHẮN (Khớp hình 2) */
         <>
+          {/* BANNER VIP & PHÍM TẮT ĐẶC QUYỀN TRỰC DIỆN */}
+          <div className="px-3 pt-3 pb-2 border-b border-neutral-800/80 bg-[#141820]">
+            {/* 1. NÚT ĐĂNG KÝ / NÂNG CẤP VIP CHÍNH */}
+            {onOpenVipCheckout && (
+              <button
+                type="button"
+                onClick={onOpenVipCheckout}
+                className="w-full p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/25 via-rose-500/20 to-amber-500/25 hover:from-amber-500/35 hover:to-rose-500/30 border border-amber-400/60 hover:border-amber-400 flex items-center justify-between text-left transition-all cursor-pointer shadow-lg group active:scale-98"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 group-hover:scale-110 transition-transform shadow-inner">
+                    <Crown className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                      <span>{currentUser?.is_gold ? `Tinder ${currentUser.vip_level || 'Gold'} (Đã kích hoạt)` : 'Đăng Ký Tinder Gold™ VIP'}</span>
+                      <Sparkles className="w-3 h-3 text-amber-300 animate-spin-slow" />
+                    </div>
+                    <div className="text-[10px] text-neutral-300 mt-0.5">
+                      {currentUser?.is_gold ? 'Đặc quyền VIP đang hoạt động' : 'Xem ai thích bạn, vô hạn lượt thích'}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 to-amber-500 text-neutral-950 px-2.5 py-1 rounded-full shadow-md shrink-0">
+                  {currentUser?.is_gold ? 'VIP' : 'Nâng Cấp'}
+                </span>
+              </button>
+            )}
+
+            {/* 2. BA PHÍM TẮT TIỆN ÍCH: PASSPORT, TÍCH XANH, AN TOÀN */}
+            <div className="grid grid-cols-3 gap-1.5 mt-2">
+              {onOpenPassport && (
+                <button
+                  type="button"
+                  onClick={onOpenPassport}
+                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-cyan-500/50 text-neutral-300 hover:text-cyan-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
+                  title="Hộ chiếu Tinder Passport™ - Đổi địa điểm khám phá toàn cầu"
+                >
+                  <Globe className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-bold truncate max-w-full">
+                    Passport
+                  </span>
+                </button>
+              )}
+
+              {onOpenPhotoVerify && (
+                <button
+                  type="button"
+                  onClick={onOpenPhotoVerify}
+                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-blue-500/50 text-neutral-300 hover:text-blue-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
+                  title="Xác minh khuôn mặt AI - Nhận huy hiệu tích xanh"
+                >
+                  <ShieldCheck className={`w-4 h-4 group-hover:scale-110 transition-transform ${currentUser?.is_verified ? 'text-blue-400' : 'text-amber-400'}`} />
+                  <span className="text-[10px] font-bold truncate max-w-full">
+                    {currentUser?.is_verified ? 'Đã Tích Xanh' : 'Tích Xanh AI'}
+                  </span>
+                </button>
+              )}
+
+              {onOpenSafetyToolkit && (
+                <button
+                  type="button"
+                  onClick={onOpenSafetyToolkit}
+                  className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-rose-500/50 text-neutral-300 hover:text-rose-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
+                  title="Bộ công cụ an toàn: Báo cáo, mẹo hẹn hò, chặn liên hệ"
+                >
+                  <Shield className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-bold truncate max-w-full">
+                    An Toàn
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* 2. TABS: CÁC TƯƠNG HỢP | TIN NHẮN */}
           <div className="flex px-4 pt-3 pb-1 border-b border-neutral-800 bg-[#111418]">
             <button
