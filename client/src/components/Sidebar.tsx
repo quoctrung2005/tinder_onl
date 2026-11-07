@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import type { UserProfile } from '../types';
 import {
-  Zap, Compass, Briefcase, Shield, CheckCircle, Search, Heart, ExternalLink, Sliders, MessageCircle
+  Zap, Compass, Briefcase, Shield, CheckCircle, Search, Heart, ExternalLink, Sliders, MessageCircle,
+  Globe, Crown, ShieldCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,6 +26,9 @@ interface SidebarProps {
   onOpenProfile?: (user: UserProfile) => void;
   shortcutsEnabled?: boolean;
   onToggleShortcuts?: () => void;
+  onOpenPassport?: () => void;
+  onOpenPhotoVerify?: () => void;
+  onOpenVipCheckout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,6 +52,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenProfile,
   shortcutsEnabled = true,
   onToggleShortcuts,
+  onOpenPassport,
+  onOpenPhotoVerify,
+  onOpenVipCheckout
 }) => {
   const [activeTab, setActiveTab] = useState<'matches' | 'messages'>('matches');
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,6 +145,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Shield className="w-4 h-4" />
           </button>
 
+          {onOpenPassport && (
+            <button
+              type="button"
+              onClick={onOpenPassport}
+              title="Hộ chiếu Tinder Passport™ - Đổi địa điểm toàn cầu"
+              className="w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-cyan-300 hover:text-cyan-200 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+            >
+              <Globe className="w-4 h-4" />
+            </button>
+          )}
+
           {onOpenAdmin && currentUser?.role === 'admin' && (
             <button
               type="button"
@@ -154,6 +172,65 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isProfileMode ? (
         /* DANH SÁCH MENU CÀI ĐẶT HỒ SƠ & ĐĂNG XUẤT (Khớp 100% hình 3) */
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-white bg-[#111418]">
+          {/* VIP Upgrade Banner */}
+          {onOpenVipCheckout && (
+            <div
+              onClick={onOpenVipCheckout}
+              className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/25 via-rose-500/15 to-amber-500/25 border border-amber-400/50 hover:border-amber-400 transition-all cursor-pointer shadow-lg group"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs">
+                  <Crown className="w-4 h-4 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>{currentUser?.is_gold ? 'Tinder Gold™ Đang Hoạt Động' : 'Nâng Cấp Tinder VIP'}</span>
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-neutral-950 px-2 py-0.5 rounded-full">
+                  {currentUser?.is_gold ? 'ĐÃ KÍCH HOẠT' : 'ƯU ĐÃI 50%'}
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-300 mt-1">
+                Xem ai đã thích bạn, vô hạn Likes, Rewind & Tinder Passport™ toàn cầu.
+              </p>
+            </div>
+          )}
+
+          {/* Hộ Chiếu Tinder Passport */}
+          {onOpenPassport && (
+            <button
+              type="button"
+              onClick={onOpenPassport}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-neutral-800/60 text-xs font-semibold text-neutral-200 transition-colors cursor-pointer border border-neutral-800/60"
+            >
+              <div className="flex items-center gap-2.5">
+                <Globe className="w-4 h-4 text-cyan-400" />
+                <span>Hộ Chiếu Tinder Passport™</span>
+              </div>
+              <span className="text-[10px] text-cyan-300 font-bold bg-cyan-500/15 px-2 py-0.5 rounded-full">
+                {currentUser?.city || 'Hồ Chí Minh'}
+              </span>
+            </button>
+          )}
+
+          {/* Xác Minh Ảnh AI (Tích Xanh) */}
+          {onOpenPhotoVerify && (
+            <button
+              type="button"
+              onClick={onOpenPhotoVerify}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-neutral-800/60 text-xs font-semibold text-neutral-200 transition-colors cursor-pointer border border-neutral-800/60"
+            >
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className={`w-4 h-4 ${currentUser?.is_verified ? 'text-blue-400' : 'text-neutral-400'}`} />
+                <span>Xác Minh Ảnh Chính Chủ</span>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                currentUser?.is_verified
+                  ? 'text-blue-300 bg-blue-500/20'
+                  : 'text-amber-300 bg-amber-500/20'
+              }`}>
+                {currentUser?.is_verified ? '✓ Đã có tích xanh' : 'Nhận tích xanh'}
+              </span>
+            </button>
+          )}
+
           {/* Nhóm liên kết chính sách (Khớp 100% hình 1) */}
           <div className="space-y-1">
             <div className="p-3 text-xs font-bold text-neutral-300">

@@ -14,7 +14,12 @@ import {
   getAdminConversations,
   getAdminRoomMessages,
   deleteAdminMessage,
-  forceMatchUsers
+  forceMatchUsers,
+  getAdminRevenue,
+  getAdminAuditLogs,
+  sendAdminBroadcast,
+  getSystemConfig,
+  updateSystemConfig
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -46,5 +51,18 @@ router.delete('/messages/:messageId', deleteAdminMessage);
 
 // 5. Kết nối ghép đôi thủ công (Force Match)
 router.post('/force-match', forceMatchUsers);
+
+// 6. Tài chính, Doanh thu & Giao dịch VIP
+router.get('/revenue', getAdminRevenue);
+
+// 7. Nhật ký Hành động Quản trị viên (Audit Logs)
+router.get('/audit-logs', getAdminAuditLogs);
+
+// 8. Phát thông báo toàn hệ thống (Broadcast Announcement)
+router.post('/broadcast', sendAdminBroadcast);
+
+// 9. Cấu hình thuật toán & tham số nền tảng
+router.get('/config', getSystemConfig);
+router.put('/config', updateSystemConfig);
 
 export default router;

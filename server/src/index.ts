@@ -45,7 +45,7 @@ app.use('/api/users/me', authRoutes);
 io.on('connection', (socket) => {
   console.log(`⚡ Client kết nối Socket: ${socket.id}`);
 
-  // Tham gia phòng cá nhân (để nhận notification khi có Match mới)
+  // Tham gia phòng cá nhân (để nhận notification khi có Match mới & Cuộc gọi đến)
   socket.on('join_user', (userId: string) => {
     socket.join(`user_${userId}`);
     console.log(`👤 User [${userId}] đã join phòng riêng.`);
@@ -60,6 +60,37 @@ io.on('connection', (socket) => {
   // Nhận và phát tin nhắn thời gian thực
   socket.on('send_message', (data: { roomId: string; message: any }) => {
     io.to(`room_${data.roomId}`).emit('new_message', data.message);
+  });
+
+  // Sự kiện "Đang soạn tin nhắn..." (Typing indicator)
+  socket.on('typing', (data: { roomId: string; senderId: string; senderName: string }) => {
+    socket.to(`room_${data.roomId}`).emit('user_typing', data);
+  });
+
+  socket.on('stop_typing', (data: { roomId: string; senderId: string }) => {
+    socket.to(`room_${data.roomId}`).emit('user_stop_typing', data);
+  });
+
+  // WebRTC Video / Voice Call Signaling (Báo hiệu cuộc gọi thoại & video)
+  socket.on('call_partner', (data: { partnerId: string; caller: any; isVideo: boolean; offer?: any }) => {
+    console.log(`📞 Cuộc gọi từ [${data.caller.name}] đến đối phương [${data.partnerId}]`);
+    io.to(`user_${data.partnerId}`).emit('incoming_call', data);
+  });
+
+  socket.on('accept_call', (data: { callerId: string; partner: any; answer?: any }) => {
+    io.to(`user_${data.callerId}`).emit('call_accepted', data);
+  });
+
+  socket.on('reject_call', (data: { callerId: string }) => {
+    io.to(`user_${data.callerId}`).emit('call_rejected');
+  });
+
+  socket.on('end_call', (data: { targetUserId: string }) => {
+    io.to(`user_${data.targetUserId}`).emit('call_ended');
+  });
+
+  socket.on('ice_candidate', (data: { targetUserId: string; candidate: any }) => {
+    io.to(`user_${data.targetUserId}`).emit('ice_candidate', data.candidate);
   });
 
   socket.on('disconnect', () => {

@@ -17,6 +17,9 @@ import { GraphTunerModal, type GraphTuningParams } from './components/GraphTuner
 import { MatchGoldModal } from './components/MatchGoldModal';
 import { LikesYouView } from './components/LikesYouView';
 import { AdminDashboard } from './components/AdminDashboard';
+import { PassportModal } from './components/PassportModal';
+import { PhotoVerificationModal } from './components/PhotoVerificationModal';
+import { VipCheckoutModal } from './components/VipCheckoutModal';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -60,6 +63,10 @@ export function App() {
   const [isLikesYouMode, setIsLikesYouMode] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(0);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isPassportOpen, setIsPassportOpen] = useState(false);
+  const [isPhotoVerifyOpen, setIsPhotoVerifyOpen] = useState(false);
+  const [isVipCheckoutOpen, setIsVipCheckoutOpen] = useState(false);
+  const [broadcastAlert, setBroadcastAlert] = useState<{ title: string; message: string; type: string; createdAt: string } | null>(null);
   const [boostToastMessage, setBoostToastMessage] = useState<string | null>(null);
 
   const handleTriggerBoost = () => {
@@ -136,6 +143,10 @@ export function App() {
 
       const socket = io('http://localhost:5000');
       socket.emit('join_user', currentUser?.id || 'user_me');
+
+      socket.on('system_broadcast', (data: any) => {
+        setBroadcastAlert(data);
+      });
 
       socket.on('new_match', (data: any) => {
         if (data?.matchedUser) {
@@ -344,6 +355,38 @@ export function App() {
 
       {/* 2. Main Stage bên phải */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-black relative">
+        {/* Thông báo đẩy toàn hệ thống thời gian thực từ Quản Trị Viên (System Broadcast) */}
+        {broadcastAlert && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-xl p-4 rounded-3xl bg-gradient-to-r from-rose-600 via-pink-600 to-indigo-600 text-white shadow-2xl border border-white/20 flex items-start justify-between gap-3 animate-fadeIn">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl mt-0.5">📢</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-sm uppercase tracking-wide">
+                    {broadcastAlert.title}
+                  </span>
+                  <span className="text-[10px] font-extrabold bg-black/30 px-2 py-0.5 rounded-full">
+                    {broadcastAlert.type || 'HỆ THỐNG'}
+                  </span>
+                </div>
+                <p className="text-xs text-white/90 mt-1 leading-relaxed">
+                  {broadcastAlert.message}
+                </p>
+                <span className="text-[9px] text-white/60 block mt-1">
+                  Phát lúc: {new Date(broadcastAlert.createdAt).toLocaleTimeString('vi-VN')}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setBroadcastAlert(null)}
+              className="p-1 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors cursor-pointer shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {boostToastMessage && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-purple-300/60 animate-bounce">
             <span>{boostToastMessage}</span>
@@ -490,6 +533,49 @@ export function App() {
             setIsProfileMode(false);
           }
           setSelectedProfileForModal(null);
+        }}
+      />
+
+      {/* 9. Modal Hộ Chiếu Tinder Passport™ (Đổi vị trí toàn cầu) */}
+      <PassportModal
+        isOpen={isPassportOpen}
+        currentUser={currentUser}
+        onClose={() => setIsPassportOpen(false)}
+        onLocationUpdated={(newCity, newCountry) => {
+          if (currentUser) {
+            setCurrentUser({
+              ...currentUser,
+              city: newCity,
+              passport_city: newCity,
+              passport_country: newCountry
+            });
+            handleReload();
+          }
+        }}
+      />
+
+      {/* 10. Modal Xác Minh Khuôn Mặt AI (Tích Xanh Chính Chủ) */}
+      <PhotoVerificationModal
+        isOpen={isPhotoVerifyOpen}
+        currentUser={currentUser}
+        onClose={() => setIsPhotoVerifyOpen(false)}
+        onSuccess={(updated) => {
+          setCurrentUser(updated);
+          setBoostToastMessage('✨ Chúc mừng! Hồ sơ của bạn đã nhận Tích Xanh Chính Chủ Tinder AI.');
+          setTimeout(() => setBoostToastMessage(null), 3500);
+        }}
+      />
+
+      {/* 11. Modal Nâng Cấp Tinder VIP (Plus, Gold, Platinum) */}
+      <VipCheckoutModal
+        isOpen={isVipCheckoutOpen}
+        currentUser={currentUser}
+        onClose={() => setIsVipCheckoutOpen(false)}
+        onSuccess={(updated) => {
+          setCurrentUser(updated);
+          setIsGoldModalOpen(false);
+          setBoostToastMessage('👑 Đặc quyền Tinder VIP đã được kích hoạt thành công!');
+          setTimeout(() => setBoostToastMessage(null), 3500);
         }}
       />
     </div>

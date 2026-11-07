@@ -204,3 +204,70 @@ export const getAllInterests = async (req: AuthRequest, res: Response) => {
     await session.close();
   }
 };
+
+// Nâng cấp gói VIP (Tinder Plus, Gold, Platinum)
+export const upgradeVip = async (req: AuthRequest, res: Response) => {
+  const userId = req.userId || 'user_me';
+  const { packageType, paymentMethod, amount } = req.body;
+  const session = getDriver().session();
+  const txId = 'TXN_' + Date.now();
+
+  try {
+    await session.run(`
+      MATCH (u:User {id: $userId})
+      SET u.vip_level = $packageType,
+          u.is_gold = true,
+          u.vip_activated_at = datetime()
+      CREATE (t:Transaction {
+        id: $txId,
+        packageType: $packageType,
+        paymentMethod: $paymentMethod,
+        amount: $amount,
+        status: 'SUCCESS',
+        created_at: datetime()
+      })
+      CREATE (u)-[:PURCHASED]->(t)
+    `, {
+      userId,
+      packageType: packageType || 'GOLD',
+      paymentMethod: paymentMethod || 'VNPAY',
+      amount: Number(amount) || 199000,
+      txId
+    });
+
+    res.json({
+      success: true,
+      message: `Chúc mừng bạn đã nâng cấp thành công gói Tinder ${packageType}! Đặc quyền VIP đã được kích hoạt.`,
+      transactionId: txId
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    await session.close();
+  }
+};
+
+// Hộ chiếu Tinder (Tinder Passport™ - Đổi vị trí sang bất kỳ thành phố nào trên thế giới)
+export const updatePassport = async (req: AuthRequest, res: Response) => {
+  const userId = req.userId || 'user_me';
+  const { city, country } = req.body;
+  const session = getDriver().session();
+
+  try {
+    await session.run(`
+      MATCH (u:User {id: $userId})
+      SET u.passport_city = $city,
+          u.passport_country = $country,
+          u.city = $city
+    `, { userId, city, country: country || 'Việt Nam' });
+
+    res.json({
+      success: true,
+      message: `Đã kích hoạt Tinder Passport™ tới ${city}! Hồ sơ của bạn sẽ hiển thị cho những người dùng tại đây.`
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    await session.close();
+  }
+};

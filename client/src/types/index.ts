@@ -48,6 +48,10 @@ export interface UserProfile {
 
   // Tính năng Tinder Web Nâng cao
   role?: 'admin' | 'user';
+  is_gold?: boolean;
+  vip_level?: string;
+  passport_city?: string;
+  passport_country?: string;
   is_verified?: boolean;                  // Tích xanh chính chủ
   is_banned?: boolean;                    // Khóa tài khoản vi phạm
   likesReceived?: number;                 // Số lượt thích nhận được
