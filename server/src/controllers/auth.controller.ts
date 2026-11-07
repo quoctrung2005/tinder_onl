@@ -39,6 +39,7 @@ export const register = async (req: AuthRequest, res: Response) => {
         pref_max_distance: 50,
         pref_min_age: 18,
         pref_max_age: 35,
+        role: 'user',
         is_verified: false,
         global_mode: false,
         blocked_contacts: [],
@@ -62,12 +63,12 @@ export const register = async (req: AuthRequest, res: Response) => {
       interests: interests || ['Cà phê', 'Du lịch']
     });
 
-    const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: userId, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       message: 'Đăng ký tài khoản thành công',
       token,
-      user: { id: userId, email, name, age, gender, photos, interests }
+      user: { id: userId, email, name, age, gender, photos, interests, role: 'user' }
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -100,8 +101,9 @@ export const login = async (req: AuthRequest, res: Response) => {
 
     delete user.password;
     if (user.age && user.age.toNumber) user.age = user.age.toNumber();
+    user.role = user.role || 'user';
 
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
       message: 'Đăng nhập thành công',
@@ -168,6 +170,7 @@ export const googleAuth = async (req: AuthRequest, res: Response) => {
         u.bio = "Người dùng Tinder kết nối qua tài khoản Google 🚀",
         u.city = "Hồ Chí Minh",
         u.photos = [$photo],
+        u.role = 'user',
         u.is_verified = true,
         u.global_mode = false,
         u.relationship_goal = "Tìm người yêu lâu dài",
@@ -177,6 +180,7 @@ export const googleAuth = async (req: AuthRequest, res: Response) => {
       ON MATCH SET
         u.name = CASE WHEN u.name IS NULL OR u.name = "" THEN $name ELSE u.name END,
         u.photos = CASE WHEN $avatar <> "" THEN [$avatar] ELSE u.photos END,
+        u.role = coalesce(u.role, 'user'),
         u.is_verified = true
       WITH u
       UNWIND ["Cà phê", "Du lịch", "Âm nhạc", "Nhiếp ảnh", "Công nghệ", "Mèo"] AS intName
@@ -200,9 +204,11 @@ export const googleAuth = async (req: AuthRequest, res: Response) => {
 
     const user = result.records[0].get('user');
     delete user.password;
+    user.role = user.role || 'user';
     if (user.age && user.age.toNumber) user.age = user.age.toNumber();
+    user.role = user.role || 'user';
 
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
       message: 'Đăng nhập Google thành công',
@@ -235,6 +241,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 
     const user = result.records[0].get('user');
     delete user.password;
+    user.role = user.role || 'user';
     if (user.age && user.age.toNumber) user.age = user.age.toNumber();
     if (user.pref_min_age && user.pref_min_age.toNumber) user.pref_min_age = user.pref_min_age.toNumber();
     if (user.pref_max_age && user.pref_max_age.toNumber) user.pref_max_age = user.pref_max_age.toNumber();

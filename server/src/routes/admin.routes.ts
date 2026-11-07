@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authMiddleware, requireAdmin } from '../middlewares/auth.middleware';
 import {
   getAdminStats,
   getAdminUsers,
@@ -10,6 +11,10 @@ import {
 } from '../controllers/admin.controller';
 
 const router = Router();
+
+// Toàn bộ API Quản trị viên bắt buộc phải có Token hợp lệ và có quyền Admin
+router.use(authMiddleware);
+router.use(requireAdmin);
 
 // 1. Thống kê tổng quan & KPIs
 router.get('/stats', getAdminStats);

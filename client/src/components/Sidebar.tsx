@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Shield className="w-4 h-4" />
           </button>
 
-          {onOpenAdmin && (
+          {onOpenAdmin && currentUser?.role === 'admin' && (
             <button
               type="button"
               onClick={onOpenAdmin}
@@ -255,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Chia sẻ Match
             </button>
 
-            {onOpenAdmin && (
+            {onOpenAdmin && currentUser?.role === 'admin' && (
               <button
                 type="button"
                 onClick={onOpenAdmin}

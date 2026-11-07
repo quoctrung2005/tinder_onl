@@ -78,6 +78,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsGoogleModalOpen(true);
   };
 
+  const handleAdminLogin = async () => {
+    setEmail('admin@tinder.com');
+    setPassword('admin123');
+    setError('');
+    setLoading(true);
+    try {
+      const res = await axios.post('http://localhost:5000/api/auth/login', {
+        email: 'admin@tinder.com',
+        password: 'admin123'
+      });
+      localStorage.setItem('tinder_token', res.data.token);
+      onSuccess(res.data.token, res.data.user);
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Lỗi đăng nhập tài khoản Admin');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDemoLogin = async () => {
     setEmail('user@tinder.com');
     setPassword('password123');
@@ -273,13 +293,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             Tiếp tục với Google
           </button>
 
-          <button
-            onClick={handleDemoLogin}
-            type="button"
-            className="w-full py-2.5 rounded-full border border-rose-500/40 hover:bg-rose-500/10 text-rose-400 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" /> 1-Click Đăng nhập Demo (user@tinder.com)
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleDemoLogin}
+              type="button"
+              className="py-2.5 px-3 rounded-2xl border border-rose-500/40 hover:bg-rose-500/10 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title="Đăng nhập tài khoản User để vào quẹt thẻ và chat"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> 👤 User Demo
+            </button>
+            <button
+              onClick={handleAdminLogin}
+              type="button"
+              className="py-2.5 px-3 rounded-2xl border border-amber-500/40 hover:bg-amber-500/10 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title="Đăng nhập tài khoản Admin để vào Dashboard quản trị"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> 🛡️ Admin Demo
+            </button>
+          </div>
 
           <button
             onClick={() => {

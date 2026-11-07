@@ -262,7 +262,13 @@ export function App() {
 
   // NẾU ĐANG Ở CHẾ ĐỘ QUẢN TRỊ ADMIN -> HIỂN THỊ ADMIN DASHBOARD
   if (isAdminOpen) {
-    return <AdminDashboard onBackToApp={() => setIsAdminOpen(false)} />;
+    return (
+      <AdminDashboard
+        currentUser={currentUser}
+        onBackToApp={() => setIsAdminOpen(false)}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   // NẾU CHƯA ĐĂNG NHẬP (KHÔNG CÓ TOKEN) -> HIỂN THỊ MÀN HÌNH CHÀO MỪNG ĐĂNG KÝ / ĐĂNG NHẬP CHUẨN TINDER
@@ -272,9 +278,13 @@ export function App() {
         onAuthSuccess={(newToken, user) => {
           setToken(newToken);
           setCurrentUser(user);
-          loadInitialData(newToken);
+          if (user.role === 'admin') {
+            setIsAdminOpen(true);
+          } else {
+            setIsAdminOpen(false);
+            loadInitialData(newToken);
+          }
         }}
-        onOpenAdmin={() => setIsAdminOpen(true)}
       />
     );
   }
@@ -430,7 +440,12 @@ export function App() {
         onSuccess={(newToken, user) => {
           setToken(newToken);
           setCurrentUser(user);
-          loadInitialData(newToken);
+          if (user.role === 'admin') {
+            setIsAdminOpen(true);
+          } else {
+            setIsAdminOpen(false);
+            loadInitialData(newToken);
+          }
         }}
       />
 

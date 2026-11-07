@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Users, Heart, MessageCircle, ShieldAlert, CheckCircle, Ban, Trash2,
-  Eye, RefreshCw, Search, Database, Sparkles, ArrowLeft, Activity, Flame,
-  Zap, Lock, Unlock, UserCheck
+  LayoutDashboard, Users, ShieldAlert, Zap, Database, MessageCircle,
+  RefreshCw, Search, ArrowLeft, Sun, Moon, LogOut, CheckCircle, Ban,
+  Trash2, Eye, Sparkles, Heart, Activity, ShieldCheck, Flame
 } from 'lucide-react';
 import type { UserProfile } from '../types';
 import { ProfileDetailModal } from './ProfileDetailModal';
@@ -37,18 +37,26 @@ interface ReportItem {
 }
 
 interface AdminDashboardProps {
+  currentUser?: UserProfile | null;
   onBackToApp: () => void;
+  onLogout?: () => void;
 }
 
 const API_BASE = 'http://localhost:5000/api';
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  currentUser,
+  onBackToApp,
+  onLogout
+}) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'reports' | 'force_match' | 'system'>('overview');
+  const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sidebarSearch, setSidebarSearch] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'banned'>('all');
   const [selectedUserForModal, setSelectedUserForModal] = useState<UserProfile | null>(null);
@@ -59,6 +67,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
   const [forceUserB, setForceUserB] = useState<string>('');
   const [matchingInProgress, setMatchingInProgress] = useState<boolean>(false);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('tinder_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const showToast = (msg: string) => {
     setActionMessage(msg);
     setTimeout(() => setActionMessage(null), 3500);
@@ -67,17 +80,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
   const loadData = async () => {
     try {
       setLoading(true);
+      const headers = getAuthHeaders();
       const [statsRes, usersRes, reportsRes] = await Promise.all([
-        axios.get(`${API_BASE}/admin/stats`),
-        axios.get(`${API_BASE}/admin/users`),
-        axios.get(`${API_BASE}/admin/reports`)
+        axios.get(`${API_BASE}/admin/stats`, { headers }),
+        axios.get(`${API_BASE}/admin/users`, { headers }),
+        axios.get(`${API_BASE}/admin/reports`, { headers })
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data || []);
       setReports(reportsRes.data || []);
     } catch (err: any) {
       console.error('Lỗi khi nạp dữ liệu Admin:', err);
-      showToast('❌ Lỗi kết nối đến máy chủ API: ' + (err.message || ''));
+      showToast('❌ Lỗi xác thực hoặc máy chủ: ' + (err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
     }
@@ -87,23 +101,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
     loadData();
   }, []);
 
-  // Xử lý Cấp / Thu hồi Tích xanh
+  // Kiểm tra quyền Quản trị viên
+  if (currentUser && currentUser.role !== 'admin') {
+    return (
+      <div className="min-h-screen w-screen bg-[#0b0e14] text-white flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="w-20 h-20 rounded-3xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mb-6 shadow-2xl">
+          <ShieldAlert className="w-10 h-10 text-rose-500" />
+        </div>
+        <h2 className="text-3xl font-extrabold tracking-tight mb-3">Quyền truy cập bị từ chối</h2>
+        <p className="text-neutral-400 text-sm max-w-md leading-relaxed mb-8">
+          Tài khoản hiện tại <strong className="text-white font-semibold">({currentUser.email})</strong> không có vai trò Quản trị viên (Admin). Bạn không được phép truy cập trang điều khiển này.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={onBackToApp}
+            className="px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-lg shadow-rose-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            Quay lại Tinder
+          </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="px-6 py-3 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-sm border border-neutral-700 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              Đăng xuất
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Cấp / Thu hồi tích xanh
   const handleToggleVerify = async (userId: string, userName: string) => {
     try {
-      const res = await axios.patch(`${API_BASE}/admin/users/${userId}/verify`);
+      const res = await axios.patch(`${API_BASE}/admin/users/${userId}/verify`, {}, { headers: getAuthHeaders() });
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_verified: res.data.is_verified } : u))
       );
       showToast(res.data.message || `Đã đổi trạng thái tích xanh cho ${userName}`);
     } catch (err: any) {
-      showToast('❌ Lỗi khi cập nhật tích xanh: ' + (err.message || ''));
+      showToast('❌ ' + (err.response?.data?.error || err.message));
     }
   };
 
-  // Xử lý Khóa / Mở khóa tài khoản
+  // Khóa / Mở khóa tài khoản
   const handleToggleBan = async (userId: string, userName: string) => {
     try {
-      const res = await axios.patch(`${API_BASE}/admin/users/${userId}/ban`);
+      const res = await axios.patch(`${API_BASE}/admin/users/${userId}/ban`, {}, { headers: getAuthHeaders() });
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, is_banned: res.data.is_banned } : u))
       );
@@ -112,26 +157,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
       );
       showToast(res.data.message || `Đã đổi trạng thái khóa tài khoản ${userName}`);
     } catch (err: any) {
-      showToast('❌ Lỗi khi khóa tài khoản: ' + (err.message || ''));
+      showToast('❌ ' + (err.response?.data?.error || err.message));
     }
   };
 
-  // Xử lý Xóa người dùng
+  // Xóa người dùng
   const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!window.confirm(`Xác nhận xóa tài khoản "${userName}" và toàn bộ quan hệ trong đồ thị Neo4j? Thao tác này không thể hoàn tác.`)) {
+    if (!window.confirm(`Xác nhận xóa tài khoản "${userName}" và toàn bộ quan hệ trong Neo4j? Thao tác không thể hoàn tác.`)) {
       return;
     }
 
     try {
-      await axios.delete(`${API_BASE}/admin/users/${userId}`);
+      await axios.delete(`${API_BASE}/admin/users/${userId}`, { headers: getAuthHeaders() });
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       showToast(`🗑️ Đã xóa người dùng "${userName}" thành công.`);
     } catch (err: any) {
-      showToast('❌ Lỗi khi xóa người dùng: ' + (err.message || ''));
+      showToast('❌ ' + (err.response?.data?.error || err.message));
     }
   };
 
-  // Xử lý Ghép đôi cưỡng bức (Force Match)
+  // Ghép đôi thủ công
   const handleForceMatch = async () => {
     if (!forceUserA || !forceUserB) {
       showToast('⚠️ Vui lòng chọn đủ 2 người dùng.');
@@ -147,7 +192,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
       const res = await axios.post(`${API_BASE}/admin/force-match`, {
         userAId: forceUserA,
         userBId: forceUserB
-      });
+      }, { headers: getAuthHeaders() });
+
       showToast('🎉 ' + res.data.message);
       setForceUserA('');
       setForceUserB('');
@@ -159,9 +205,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
     }
   };
 
-  // Lọc người dùng theo từ khóa tìm kiếm & bộ lọc
+  // Lọc người dùng
   const filteredUsers = users.filter((u) => {
-    const q = searchQuery.toLowerCase().trim();
+    const q = (searchQuery || sidebarSearch).toLowerCase().trim();
     const matchSearch =
       !q ||
       u.name.toLowerCase().includes(q) ||
@@ -177,679 +223,780 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToApp }) =
     return matchSearch && matchGender && matchStatus;
   });
 
-  return (
-    <div className="min-h-screen w-screen bg-[#090b0e] text-neutral-100 flex flex-col font-sans select-none overflow-x-hidden">
-      {/* 1. TOP HEADER CONSOLE */}
-      <header className="h-16 px-6 bg-[#111418] border-b border-neutral-800 flex items-center justify-between shrink-0 shadow-lg z-30">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBackToApp}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-semibold transition-all hover:scale-102 cursor-pointer shadow-sm border border-neutral-700/60"
-            title="Quay lại ứng dụng hẹn hò Tinder"
-          >
-            <ArrowLeft className="w-4 h-4 text-rose-500" />
-            <span>Vào Tinder Web</span>
-          </button>
+  const isDark = themeMode === 'dark';
 
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-rose-500/20">
-              <Heart className="w-4 h-4 fill-white" />
-            </div>
-            <div>
-              <h1 className="text-sm font-extrabold tracking-tight flex items-center gap-2">
-                <span>Tinder Admin Console</span>
-                <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 text-[10px] font-bold">
-                  v2.5 Pro
+  return (
+    <div className={`min-h-screen w-screen font-sans select-none overflow-x-hidden flex transition-colors duration-300 ${
+      isDark ? 'bg-[#090d16] text-neutral-100' : 'bg-[#eef2f6] text-slate-800'
+    }`}>
+      {/* =========================================================================
+          1. FLOATING MODERN SIDEBAR (KHỚP 100% PHONG CÁCH TIKTOK VIDEO @snakecode0)
+         ========================================================================= */}
+      <aside className={`w-72 shrink-0 m-4 rounded-3xl flex flex-col justify-between p-5 border shadow-2xl transition-all duration-300 z-20 ${
+        isDark
+          ? 'bg-[#121824]/90 backdrop-blur-xl border-neutral-700/50 shadow-black/60'
+          : 'bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-slate-300/40'
+      }`}>
+        {/* PHẦN TRÊN CỦA SIDEBAR */}
+        <div className="space-y-5">
+          {/* 1.1 THÔNG TIN ADMIN PROFILE (Avatar, Name, Role) */}
+          <div className="flex items-center justify-between pb-3 border-b border-inherit/40">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <img
+                  src={currentUser?.photos?.[0] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80'}
+                  alt="Admin Avatar"
+                  className="w-11 h-11 rounded-2xl object-cover ring-2 ring-rose-500/50 shadow-md"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-inherit" />
+              </div>
+              <div className="overflow-hidden">
+                <h3 className="text-xs font-extrabold truncate flex items-center gap-1">
+                  <span>{currentUser?.name || 'Quản Trị Viên'}</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                </h3>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md inline-block mt-0.5 ${
+                  isDark ? 'bg-rose-500/20 text-rose-300' : 'bg-rose-100 text-rose-600'
+                }`}>
+                  {currentUser?.role === 'admin' ? 'Admin Root' : 'Admin'}
                 </span>
-              </h1>
-              <p className="text-[11px] text-neutral-400">
-                Hệ thống Quản trị & Giám sát Cơ sở Dữ liệu Đồ thị Neo4j AuraDB
-              </p>
+              </div>
             </div>
+
+            <button
+              onClick={onBackToApp}
+              title="Vào giao diện Quẹt thẻ Tinder"
+              className={`p-2 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+            >
+              <ArrowLeft className="w-4 h-4 text-rose-500" />
+            </button>
           </div>
+
+          {/* 1.2 Ô TÌM KIẾM SIDEBAR (Search Dashboard...) */}
+          <div className="relative">
+            <Search className={`w-4 h-4 absolute left-3.5 top-3 ${
+              isDark ? 'text-neutral-400' : 'text-slate-400'
+            }`} />
+            <input
+              type="text"
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+              placeholder="Search dashboard..."
+              className={`w-full text-xs font-medium pl-10 pr-4 py-2.5 rounded-2xl border transition-all focus:outline-none ${
+                isDark
+                  ? 'bg-[#182030] border-neutral-700/60 text-white placeholder-neutral-500 focus:border-rose-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-rose-500'
+              }`}
+            />
+          </div>
+
+          {/* 1.3 DANH SÁCH MENU ĐIỀU HƯỚNG HIỆN ĐẠI (Menu Items with Badges) */}
+          <nav className="space-y-1.5">
+            {[
+              {
+                id: 'overview',
+                label: 'Dashboard',
+                sub: 'Tổng quan & KPIs',
+                icon: LayoutDashboard,
+                badge: stats ? `${stats.totalUsers} users` : undefined
+              },
+              {
+                id: 'users',
+                label: 'Customers',
+                sub: 'Quản lý người dùng',
+                icon: Users,
+                badge: users.length > 0 ? users.length : undefined
+              },
+              {
+                id: 'reports',
+                label: 'Tickets & Reports',
+                sub: 'Kiểm duyệt vi phạm',
+                icon: ShieldAlert,
+                badge: reports.length > 0 ? reports.length : undefined,
+                badgeColor: reports.length > 0 ? 'bg-rose-500 text-white' : undefined
+              },
+              {
+                id: 'force_match',
+                label: 'Force Match',
+                sub: 'Ghép đôi đồ thị thủ công',
+                icon: Zap,
+                badge: 'Pro'
+              },
+              {
+                id: 'system',
+                label: 'Neo4j Database',
+                sub: 'CSDL Đồ thị & Hệ thống',
+                icon: Database,
+                badge: stats ? `${stats.dbLatencyMs}ms` : 'AuraDB'
+              }
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id as any)}
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer group ${
+                    isActive
+                      ? isDark
+                        ? 'bg-rose-500/15 text-rose-400 border border-rose-500/40 shadow-sm'
+                        : 'bg-rose-50 text-rose-600 border border-rose-200 shadow-sm'
+                      : isDark
+                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                      isActive ? 'text-rose-500' : 'text-neutral-400 group-hover:text-rose-500'
+                    }`} />
+                    <div className="text-left">
+                      <div className="font-extrabold">{item.label}</div>
+                      <div className={`text-[10px] font-normal ${
+                        isActive ? (isDark ? 'text-rose-300/80' : 'text-rose-500/80') : 'text-neutral-500'
+                      }`}>
+                        {item.sub}
+                      </div>
+                    </div>
+                  </div>
+
+                  {item.badge !== undefined && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider ${
+                      item.badgeColor || (
+                        isActive
+                          ? (isDark ? 'bg-rose-500 text-white' : 'bg-rose-600 text-white')
+                          : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-200 text-slate-600')
+                      )
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Database Status & Refresh */}
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Neo4j AuraDB Online</span>
-            {stats && <span className="text-[10px] text-emerald-400/80 font-mono">({stats.dbLatencyMs}ms)</span>}
-          </div>
+        {/* 1.4 THANH CÔNG CỤ 4 NÚT VUÔNG BO GÓC DƯỚI CÙNG (KHỚP VIDEO TIKTOK) */}
+        <div className="pt-4 border-t border-inherit/40 flex items-center justify-between gap-2">
+          {/* Nút 1: Chuyển đổi Dark / Light Theme */}
+          <button
+            onClick={() => setThemeMode(isDark ? 'light' : 'dark')}
+            title={isDark ? 'Chuyển sang Giao diện Sáng (Light)' : 'Chuyển sang Giao diện Tối (Dark)'}
+            className={`flex-1 p-2.5 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer border ${
+              isDark
+                ? 'bg-[#182030] hover:bg-neutral-800 text-amber-400 border-neutral-700/60'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+            }`}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+          </button>
 
+          {/* Nút 2: Làm mới dữ liệu */}
           <button
             onClick={loadData}
             disabled={loading}
-            className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
-            title="Làm mới dữ liệu"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-rose-400' : ''}`} />
-          </button>
-        </div>
-      </header>
-
-      {/* Thông báo Toast Feedback */}
-      {actionMessage && (
-        <div className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-2xl bg-neutral-900 border border-neutral-700 text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
-          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>{actionMessage}</span>
-        </div>
-      )}
-
-      {/* 2. NAVIGATION TAB BAR */}
-      <div className="px-6 border-b border-neutral-800 bg-[#0d1014] flex items-center gap-2 overflow-x-auto no-scrollbar">
-        {[
-          { id: 'overview', label: '📊 Tổng Quan & KPIs', count: stats?.totalUsers },
-          { id: 'users', label: '👥 Quản Lý Người Dùng', count: users.length },
-          { id: 'reports', label: '🛡️ Kiểm Duyệt & Báo Cáo', count: reports.length },
-          { id: 'force_match', label: '⚡ Ghép Đôi Thủ Công', highlight: true },
-          { id: 'system', label: '🔧 Trạng Thái Neo4j & Hệ Thống' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`py-3 px-4 text-xs font-bold tracking-wide transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === tab.id
-                ? 'border-rose-500 text-white bg-rose-500/10'
-                : 'border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
+            title="Làm mới dữ liệu từ CSDL Neo4j"
+            className={`flex-1 p-2.5 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer border disabled:opacity-50 ${
+              isDark
+                ? 'bg-[#182030] hover:bg-neutral-800 text-emerald-400 border-neutral-700/60'
+                : 'bg-slate-100 hover:bg-slate-200 text-emerald-600 border-slate-200'
             }`}
           >
-            <span>{tab.label}</span>
-            {tab.count !== undefined && (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                activeTab === tab.id ? 'bg-rose-500 text-white' : 'bg-neutral-800 text-neutral-400'
-              }`}>
-                {tab.count}
-              </span>
-            )}
-            {tab.highlight && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-            )}
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-        ))}
-      </div>
 
-      {/* 3. NỘI DUNG CHÍNH (MAIN CONTENT) */}
-      <main className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-[#090b0e]">
-        {/* ===================== TAB 1: TỔNG QUAN & KPIS ===================== */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6 max-w-7xl mx-auto">
-            {/* 6 Thẻ KPI nổi bật */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-              {[
-                {
-                  label: 'Tổng Người Dùng',
-                  value: stats?.totalUsers || 0,
-                  sub: `${stats?.maleCount || 0} Nam • ${stats?.femaleCount || 0} Nữ`,
-                  icon: Users,
-                  color: 'from-blue-600/30 via-indigo-600/20 to-neutral-900',
-                  border: 'border-blue-500/40',
-                  iconColor: 'text-blue-400'
-                },
-                {
-                  label: 'Lượt Ghép Đôi',
-                  value: stats?.totalMatches || 0,
-                  sub: 'Mối quan hệ 2 chiều',
-                  icon: Heart,
-                  color: 'from-rose-600/30 via-pink-600/20 to-neutral-900',
-                  border: 'border-rose-500/40',
-                  iconColor: 'text-rose-400'
-                },
-                {
-                  label: 'Lượt Thích (Likes)',
-                  value: stats?.totalLikes || 0,
-                  sub: 'Quẹt phải trong CSDL',
-                  icon: Flame,
-                  color: 'from-amber-600/30 via-yellow-600/20 to-neutral-900',
-                  border: 'border-amber-500/40',
-                  iconColor: 'text-amber-400'
-                },
-                {
-                  label: 'Lượt Bỏ Qua (Passes)',
-                  value: stats?.totalPasses || 0,
-                  sub: 'Quẹt trái Nope',
-                  icon: Ban,
-                  color: 'from-neutral-700/40 via-neutral-800/30 to-neutral-900',
-                  border: 'border-neutral-700',
-                  iconColor: 'text-neutral-400'
-                },
-                {
-                  label: 'Tin Nhắn Đã Gửi',
-                  value: stats?.totalMessages || 0,
-                  sub: 'Thời gian thực Socket',
-                  icon: MessageCircle,
-                  color: 'from-emerald-600/30 via-teal-600/20 to-neutral-900',
-                  border: 'border-emerald-500/40',
-                  iconColor: 'text-emerald-400'
-                },
-                {
-                  label: 'Báo Cáo / Chặn',
-                  value: stats?.totalReports || 0,
-                  sub: `${stats?.bannedCount || 0} tài khoản bị khóa`,
-                  icon: ShieldAlert,
-                  color: 'from-red-600/30 via-orange-600/20 to-neutral-900',
-                  border: 'border-red-500/40',
-                  iconColor: 'text-red-400'
-                }
-              ].map((card, idx) => {
-                const IconComponent = card.icon;
-                return (
-                  <div
-                    key={idx}
-                    className={`p-4 rounded-2xl bg-gradient-to-b ${card.color} border ${card.border} shadow-xl flex flex-col justify-between`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-                        {card.label}
-                      </span>
-                      <IconComponent className={`w-4 h-4 ${card.iconColor}`} />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-white">{card.value}</div>
-                      <div className="text-[11px] text-neutral-400 mt-0.5 truncate">{card.sub}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          {/* Nút 3: Ghép đôi nhanh (Shortcut) */}
+          <button
+            onClick={() => setActiveTab('force_match')}
+            title="Mở công cụ Ghép đôi thủ công"
+            className={`flex-1 p-2.5 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer border ${
+              activeTab === 'force_match'
+                ? 'bg-rose-500 text-white border-rose-500 shadow-md'
+                : isDark
+                  ? 'bg-[#182030] hover:bg-neutral-800 text-rose-400 border-neutral-700/60'
+                  : 'bg-slate-100 hover:bg-slate-200 text-rose-600 border-slate-200'
+            }`}
+          >
+            <Zap className="w-4 h-4 fill-current" />
+          </button>
 
-            {/* Phân tích Đồ thị: Sở thích & Phân bố địa lý */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Top Sở Thích */}
-              <div className="p-5 rounded-3xl bg-[#111418] border border-neutral-800 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Top Sở Thích Được Gắn Node Nhiều Nhất</span>
-                  </h3>
-                  <span className="text-[11px] text-neutral-400 font-mono">(:Interest)</span>
-                </div>
-                <div className="space-y-3">
-                  {stats?.topInterests && stats.topInterests.length > 0 ? (
-                    stats.topInterests.map((item, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-neutral-200">
-                            #{idx + 1} {item.name}
-                          </span>
-                          <span className="text-neutral-400 font-mono">{item.count} người dùng</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-rose-500 to-amber-400 rounded-full"
-                            style={{
-                              width: `${Math.min(100, (item.count / (stats.totalUsers || 1)) * 100)}%`
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-neutral-500 text-center py-6">Đang tải dữ liệu...</div>
-                  )}
-                </div>
-              </div>
+          {/* Nút 4: Đăng xuất (Logout) */}
+          <button
+            onClick={onLogout || onBackToApp}
+            title="Đăng xuất khỏi hệ thống"
+            className={`flex-1 p-2.5 rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer border ${
+              isDark
+                ? 'bg-[#182030] hover:bg-rose-950/40 text-neutral-400 hover:text-rose-400 border-neutral-700/60'
+                : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border-slate-200'
+            }`}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
 
-              {/* Phân bố Thành phố */}
-              <div className="p-5 rounded-3xl bg-[#111418] border border-neutral-800 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-sky-400" />
-                    <span>Mật Độ Người Dùng Theo Địa Phương</span>
-                  </h3>
-                  <span className="text-[11px] text-neutral-400 font-mono">Location Points</span>
-                </div>
-                <div className="space-y-3">
-                  {stats?.cityDistribution && stats.cityDistribution.length > 0 ? (
-                    stats.cityDistribution.map((item, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-neutral-200">📍 {item.city}</span>
-                          <span className="text-neutral-400 font-mono">{item.count} tài khoản</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-neutral-800 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full"
-                            style={{
-                              width: `${Math.min(100, (item.count / (stats.totalUsers || 1)) * 100)}%`
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-neutral-500 text-center py-6">Đang tải dữ liệu...</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================== TAB 2: QUẢN LÝ NGƯỜI DÙNG ===================== */}
-        {activeTab === 'users' && (
-          <div className="space-y-4 max-w-7xl mx-auto">
-            {/* Thanh công cụ tìm kiếm và bộ lọc */}
-            <div className="p-4 rounded-2xl bg-[#111418] border border-neutral-800 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-              <div className="flex items-center gap-3 flex-1 min-w-[260px]">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm theo tên, email, thành phố..."
-                    className="w-full bg-neutral-900 border border-neutral-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-rose-500 transition-colors"
-                  />
-                </div>
-
-                {/* Lọc giới tính */}
-                <select
-                  value={genderFilter}
-                  onChange={(e) => setGenderFilter(e.target.value)}
-                  className="bg-neutral-900 border border-neutral-700/80 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-rose-500 cursor-pointer"
-                >
-                  <option value="">Tất cả Giới tính</option>
-                  <option value="FEMALE">Chỉ Nữ</option>
-                  <option value="MALE">Chỉ Nam</option>
-                </select>
-
-                {/* Lọc trạng thái */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="bg-neutral-900 border border-neutral-700/80 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-rose-500 cursor-pointer"
-                >
-                  <option value="all">Tất cả Trạng thái</option>
-                  <option value="verified">Đã có Tích xanh ✓</option>
-                  <option value="banned">Tài khoản bị khóa 🔒</option>
-                </select>
-              </div>
-
-              <div className="text-xs text-neutral-400 font-semibold">
-                Hiển thị <strong className="text-white">{filteredUsers.length}</strong> / {users.length} tài khoản
-              </div>
-            </div>
-
-            {/* Bảng danh sách người dùng */}
-            <div className="rounded-2xl border border-neutral-800 bg-[#111418] overflow-hidden shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-neutral-900/90 text-neutral-400 uppercase text-[10px] tracking-wider border-b border-neutral-800">
-                    <tr>
-                      <th className="py-3 px-4">Người Dùng</th>
-                      <th className="py-3 px-4">Tuổi & Giới tính</th>
-                      <th className="py-3 px-4">Khu Vực</th>
-                      <th className="py-3 px-4">Sức Hút (Likes / Match)</th>
-                      <th className="py-3 px-4">Tích Xanh</th>
-                      <th className="py-3 px-4">Trạng Thái</th>
-                      <th className="py-3 px-4 text-right">Thao Tác Quản Trị</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-800/80">
-                    {filteredUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-neutral-800/40 transition-colors group"
-                      >
-                        {/* Người dùng (Avatar + Tên) */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={user.photos[0] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}
-                              alt={user.name}
-                              className="w-10 h-10 rounded-full object-cover ring-1 ring-neutral-700 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <div className="font-bold text-white truncate flex items-center gap-1.5">
-                                <span>{user.name}</span>
-                                {user.is_verified && (
-                                  <CheckCircle className="w-3.5 h-3.5 text-sky-400 fill-sky-400 shrink-0" />
-                                )}
-                              </div>
-                              <div className="text-[11px] text-neutral-400 truncate">{user.email || user.id}</div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Tuổi & Giới tính */}
-                        <td className="py-3 px-4 text-neutral-300">
-                          <span className="font-semibold">{user.age} tuổi</span> •{' '}
-                          <span className={user.gender === 'FEMALE' ? 'text-pink-400' : 'text-blue-400'}>
-                            {user.gender === 'FEMALE' ? 'Nữ' : 'Nam'}
-                          </span>
-                        </td>
-
-                        {/* Khu vực */}
-                        <td className="py-3 px-4 text-neutral-300">
-                          📍 {user.city || 'Hồ Chí Minh'}
-                        </td>
-
-                        {/* Sức hút */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
-                              {user.likesReceived || 0} Likes
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold">
-                              {user.matchesCount || 0} Matches
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Tích xanh toggle */}
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => handleToggleVerify(user.id, user.name)}
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                              user.is_verified
-                                ? 'bg-sky-500/20 text-sky-300 border border-sky-400/40 hover:bg-sky-500/30'
-                                : 'bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700'
-                            }`}
-                            title="Bấm để Cấp / Thu hồi Tích xanh"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            <span>{user.is_verified ? 'Đã duyệt' : 'Chưa có'}</span>
-                          </button>
-                        </td>
-
-                        {/* Trạng thái khóa */}
-                        <td className="py-3 px-4">
-                          {user.is_banned ? (
-                            <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[10px] font-bold flex items-center gap-1 w-max">
-                              <Lock className="w-3 h-3" /> Bị khóa
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 w-max">
-                              <Unlock className="w-3 h-3" /> Hoạt động
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Thao tác */}
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {/* Xem hồ sơ */}
-                            <button
-                              onClick={() => setSelectedUserForModal(user)}
-                              className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer"
-                              title="Xem chi tiết hồ sơ"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-
-                            {/* Khóa / Mở khóa */}
-                            <button
-                              onClick={() => handleToggleBan(user.id, user.name)}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                                user.is_banned
-                                  ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
-                                  : 'bg-neutral-800 text-neutral-400 hover:text-amber-400'
-                              }`}
-                              title={user.is_banned ? 'Mở khóa tài khoản' : 'Khóa tài khoản vi phạm'}
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
-
-                            {/* Xóa người dùng */}
-                            <button
-                              onClick={() => handleDeleteUser(user.id, user.name)}
-                              className="p-1.5 rounded-lg bg-neutral-800 hover:bg-red-500/20 text-neutral-400 hover:text-red-400 transition-colors cursor-pointer"
-                              title="Xóa vĩnh viễn"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================== TAB 3: KIỂM DUYỆT & BÁO CÁO ===================== */}
-        {activeTab === 'reports' && (
-          <div className="space-y-4 max-w-5xl mx-auto">
-            <div className="p-4 rounded-2xl bg-[#111418] border border-neutral-800 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-red-400" />
-                  <span>Danh Sách Người Dùng Bị Báo Cáo & Chặn</span>
-                </h3>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Quản trị viên có thể xem xét lý do và thực hiện khóa tài khoản vi phạm ngay lập tức.
-                </p>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold">
-                {reports.length} Báo cáo
+      {/* =========================================================================
+          2. KHU VỰC NỘI DUNG CHÍNH CỦA DASHBOARD (MAIN STAGE)
+         ========================================================================= */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden p-4 pl-0">
+        <div className={`flex-1 rounded-3xl border shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${
+          isDark
+            ? 'bg-[#0f141f]/90 backdrop-blur-xl border-neutral-700/50 shadow-black/60'
+            : 'bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-slate-300/40'
+        }`}>
+          {/* 2.1 HEADER CỦA BẢNG ĐIỀU KHIỂN */}
+          <header className={`h-16 px-6 border-b flex items-center justify-between shrink-0 transition-colors ${
+            isDark ? 'border-neutral-800/80' : 'border-slate-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-neutral-400">Admin</span>
+              <span className="text-xs text-neutral-500">/</span>
+              <span className="text-sm font-extrabold capitalize text-rose-500">
+                {activeTab === 'overview' && 'Dashboard Overview & KPIs'}
+                {activeTab === 'users' && 'User Management'}
+                {activeTab === 'reports' && 'Reports & Moderation'}
+                {activeTab === 'force_match' && 'Bilateral Force Match'}
+                {activeTab === 'system' && 'Neo4j AuraDB & Infrastructure'}
               </span>
             </div>
 
-            <div className="space-y-2.5">
-              {reports.length === 0 ? (
-                <div className="p-12 text-center text-xs text-neutral-500 bg-[#111418] rounded-2xl border border-neutral-800">
-                  🎉 Hiện không có báo cáo vi phạm nào! Cộng đồng đang hoạt động lành mạnh.
-                </div>
-              ) : (
-                reports.map((report, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-2xl bg-[#111418] border border-neutral-800 flex flex-wrap items-center justify-between gap-4 hover:border-neutral-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Người báo cáo */}
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={report.reporterAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}
-                          alt={report.reporterName}
-                          className="w-9 h-9 rounded-full object-cover ring-1 ring-neutral-700"
-                        />
-                        <div className="text-xs">
-                          <div className="text-neutral-400 text-[10px]">Người gửi báo cáo</div>
-                          <div className="font-bold text-neutral-200">{report.reporterName}</div>
-                        </div>
-                      </div>
-
-                      <span className="text-neutral-600 font-bold">➔</span>
-
-                      {/* Đối tượng bị báo cáo */}
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={report.targetAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-                          alt={report.targetName}
-                          className="w-9 h-9 rounded-full object-cover ring-2 ring-red-500/60"
-                        />
-                        <div className="text-xs">
-                          <div className="text-red-400 text-[10px] font-semibold">Tài khoản bị tố cáo</div>
-                          <div className="font-bold text-white flex items-center gap-1">
-                            <span>{report.targetName}</span>
-                            {report.targetBanned && (
-                              <span className="text-[10px] text-red-400 font-mono">(Đã khóa)</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lý do */}
-                    <div className="flex-1 min-w-[200px] text-xs">
-                      <div className="text-neutral-400 text-[10px]">Lý do tố cáo:</div>
-                      <div className="font-medium text-amber-300 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20 inline-block mt-0.5">
-                        ⚠️ {report.reason}
-                      </div>
-                    </div>
-
-                    {/* Thao tác */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggleBan(report.targetId, report.targetName)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          report.targetBanned
-                            ? 'bg-neutral-800 text-neutral-300 hover:text-white'
-                            : 'bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/30'
-                        }`}
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        <span>{report.targetBanned ? 'Mở khóa' : 'Khóa tài khoản này'}</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ===================== TAB 4: GHÉP ĐÔI THỦ CÔNG (FORCE MATCH) ===================== */}
-        {activeTab === 'force_match' && (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="p-6 rounded-3xl bg-gradient-to-b from-[#181c22] via-[#14171c] to-[#0e1014] border border-neutral-800 shadow-2xl text-center relative overflow-hidden">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-rose-500/20">
-                <Zap className="w-7 h-7 fill-white" />
-              </div>
-              <h3 className="text-xl font-extrabold text-white">Công Cụ Ghép Đôi Tức Thì (Force Match)</h3>
-              <p className="text-xs text-neutral-400 mt-1 max-w-md mx-auto leading-relaxed">
-                Quản trị viên có thể chủ động kết nối 2 người dùng bất kỳ trong đồ thị Neo4j. Hệ thống sẽ tự động tạo quan hệ LIKE 2 chiều, tạo MATCHED_WITH và mở phòng chat chung.
-              </p>
-
-              {/* 2 Ô Chọn Người Dùng */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-left">
-                {/* Người Dùng A */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-neutral-300 flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-rose-400" />
-                    <span>Người dùng A:</span>
-                  </label>
-                  <select
-                    value={forceUserA}
-                    onChange={(e) => setForceUserA(e.target.value)}
-                    className="w-full p-3 rounded-2xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-rose-500 cursor-pointer"
-                  >
-                    <option value="">-- Chọn tài khoản thứ nhất --</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.age} tuổi - {u.city})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Người Dùng B */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-neutral-300 flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-pink-400" />
-                    <span>Người dùng B:</span>
-                  </label>
-                  <select
-                    value={forceUserB}
-                    onChange={(e) => setForceUserB(e.target.value)}
-                    className="w-full p-3 rounded-2xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-rose-500 cursor-pointer"
-                  >
-                    <option value="">-- Chọn tài khoản thứ hai --</option>
-                    {users
-                      .filter((u) => u.id !== forceUserA)
-                      .map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name} ({u.age} tuổi - {u.city})
-                        </option>
-                      ))}
-                  </select>
-                </div>
+            <div className="flex items-center gap-3">
+              {/* Trạng thái Neo4j AuraDB Online */}
+              <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
+                isDark
+                  ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              }`}>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Neo4j AuraDB 5.27</span>
+                {stats && <span className="font-mono text-[10px] opacity-80">({stats.dbLatencyMs}ms)</span>}
               </div>
 
-              {/* Nút Kích Hoạt */}
+              {/* Nút Vào Tinder Web */}
               <button
-                type="button"
-                onClick={handleForceMatch}
-                disabled={!forceUserA || !forceUserB || matchingInProgress}
-                className="mt-6 w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-extrabold text-sm shadow-xl shadow-rose-600/30 transition-all hover:scale-102 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                onClick={onBackToApp}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-rose-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
-                <Heart className="w-4 h-4 fill-white" />
-                <span>{matchingInProgress ? 'Đang thiết lập quan hệ trong Đồ thị Neo4j...' : 'Tạo Kết Nối Ghép Đôi Ngay'}</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Vào Tinder Web</span>
               </button>
             </div>
-          </div>
-        )}
+          </header>
 
-        {/* ===================== TAB 5: HỆ THỐNG & NEO4J ===================== */}
-        {activeTab === 'system' && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="p-6 rounded-3xl bg-[#111418] border border-neutral-800 shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                    <Database className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white">Cơ Sở Dữ Liệu Đồ Thị Neo4j AuraDB (Cloud)</h3>
-                    <p className="text-xs text-neutral-400">Giao thức bảo mật neo4j+s:// • Phiên bản Neo4j 5.27 GQL</p>
-                  </div>
-                </div>
-                <div className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Trực tuyến</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="p-3.5 rounded-2xl bg-neutral-900/80 border border-neutral-800">
-                  <div className="text-neutral-400 text-[10px] uppercase font-bold">Độ Trễ Phản Hồi (Latency)</div>
-                  <div className="text-lg font-black text-emerald-400 mt-1">{stats?.dbLatencyMs || 0} ms</div>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-neutral-900/80 border border-neutral-800">
-                  <div className="text-neutral-400 text-[10px] uppercase font-bold">Tổng Số Node Người Dùng</div>
-                  <div className="text-lg font-black text-white mt-1">{stats?.totalUsers || 0} (:User)</div>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-neutral-900/80 border border-neutral-800">
-                  <div className="text-neutral-400 text-[10px] uppercase font-bold">Quan Hệ Ghép Đôi</div>
-                  <div className="text-lg font-black text-rose-400 mt-1">{stats?.totalMatches || 0} (:MATCHED_WITH)</div>
-                </div>
-              </div>
-
-              {/* Các hành động hệ thống */}
-              <div className="pt-4 border-t border-neutral-800 space-y-3">
-                <h4 className="text-xs font-bold text-neutral-300 uppercase tracking-wider">Hành Động Khởi Tạo & Bảo Trì</h4>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={async () => {
-                      if (!window.confirm('Đặt lại toàn bộ trạng thái quẹt thẻ của user_me để khám phá lại từ đầu?')) return;
-                      try {
-                        await axios.post(`${API_BASE}/reset`);
-                        showToast('🔄 Đã đặt lại trạng thái quẹt thẻ thành công!');
-                        loadData();
-                      } catch (e: any) {
-                        showToast('❌ Lỗi: ' + e.message);
-                      }
-                    }}
-                    className="px-4 py-2.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white text-xs font-bold border border-neutral-700 transition-all cursor-pointer"
-                  >
-                    🔄 Đặt lại trạng thái Quẹt (Reset Swipes)
-                  </button>
-
-                  <button
-                    onClick={loadData}
-                    className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all cursor-pointer shadow-lg shadow-rose-600/30"
-                  >
-                    ⚡ Quét lại dữ liệu toàn hệ thống
-                  </button>
-                </div>
-              </div>
+          {/* Toast Notification */}
+          {actionMessage && (
+            <div className="fixed top-8 right-8 z-50 px-5 py-3 rounded-2xl bg-neutral-900 border border-neutral-700 text-white text-xs font-bold shadow-2xl flex items-center gap-2.5 animate-bounce">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{actionMessage}</span>
             </div>
-          </div>
-        )}
-      </main>
+          )}
 
-      {/* MODAL XEM CHI TIẾT HỒ SƠ NGƯỜI DÙNG KHI BẤM ICON MẮT */}
-      {selectedUserForModal && (
-        <ProfileDetailModal
-          isOpen={Boolean(selectedUserForModal)}
-          profile={selectedUserForModal}
-          onClose={() => setSelectedUserForModal(null)}
-        />
-      )}
+          {/* 2.2 KHỐI NỘI DUNG CUỘN THEO TAB */}
+          <main className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+            {/* ===================== TAB 1: TỔNG QUAN & KPIS ===================== */}
+            {activeTab === 'overview' && (
+              <div className="space-y-6 max-w-6xl mx-auto">
+                {/* 6 Thẻ KPI hiện đại */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                  {[
+                    { label: 'Tổng Users', val: stats?.totalUsers || 0, icon: Users, color: 'from-blue-500 to-indigo-500', trend: '+100% cloud' },
+                    { label: 'Đã Xác Thực', val: stats?.verifiedCount || 0, icon: CheckCircle, color: 'from-emerald-500 to-teal-500', trend: 'Tích xanh' },
+                    { label: 'Cặp Matches', val: stats?.totalMatches || 0, icon: Heart, color: 'from-rose-500 to-pink-500', trend: 'Mutual' },
+                    { label: 'Lượt Thích', val: stats?.totalLikes || 0, icon: Flame, color: 'from-amber-500 to-orange-500', trend: 'Likes' },
+                    { label: 'Tin Nhắn', val: stats?.totalMessages || 0, icon: MessageCircle, color: 'from-purple-500 to-violet-500', trend: 'Realtime' },
+                    { label: 'Neo4j Latency', val: `${stats?.dbLatencyMs || 0}ms`, icon: Activity, color: 'from-cyan-500 to-blue-500', trend: 'AuraDB' }
+                  ].map((kpi, idx) => {
+                    const Icon = kpi.icon;
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-3xl border transition-all hover:scale-102 ${
+                          isDark
+                            ? 'bg-[#151c2c] border-neutral-800 shadow-md'
+                            : 'bg-white border-slate-200 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{kpi.label}</span>
+                          <div className={`w-7 h-7 rounded-xl bg-gradient-to-tr ${kpi.color} flex items-center justify-center text-white shadow-sm`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                        <div className="text-xl font-black">{kpi.val}</div>
+                        <div className="text-[10px] font-semibold text-emerald-400 mt-1 flex items-center gap-1">
+                          <span>•</span>
+                          <span>{kpi.trend}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 2 Khối Đồ thị: Tỷ lệ Nam/Nữ & Phân bố Thành phố */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Phân bố Giới tính */}
+                  <div className={`p-6 rounded-3xl border ${
+                    isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                  }`}>
+                    <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-rose-500" />
+                      <span>Phân Bố Giới Tính Trên Đồ Thị</span>
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-xs font-bold mb-1.5">
+                          <span className="flex items-center gap-1.5 text-blue-400">
+                            <span>Nam (MALE)</span>
+                          </span>
+                          <span>{stats?.maleCount || 0} ({stats?.totalUsers ? Math.round(((stats?.maleCount || 0) / stats.totalUsers) * 100) : 0}%)</span>
+                        </div>
+                        <div className="w-full h-3 rounded-full bg-neutral-800 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000"
+                            style={{ width: `${stats?.totalUsers ? ((stats?.maleCount || 0) / stats.totalUsers) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-xs font-bold mb-1.5">
+                          <span className="flex items-center gap-1.5 text-pink-400">
+                            <span>Nữ (FEMALE)</span>
+                          </span>
+                          <span>{stats?.femaleCount || 0} ({stats?.totalUsers ? Math.round(((stats?.femaleCount || 0) / stats.totalUsers) * 100) : 0}%)</span>
+                        </div>
+                        <div className="w-full h-3 rounded-full bg-neutral-800 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-pink-500 to-rose-500 transition-all duration-1000"
+                            style={{ width: `${stats?.totalUsers ? ((stats?.femaleCount || 0) / stats.totalUsers) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Phân bố Thành phố */}
+                  <div className={`p-6 rounded-3xl border ${
+                    isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                  }`}>
+                    <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Phân Bố Địa Lý & Thành Phố</span>
+                    </h3>
+                    <div className="space-y-2.5">
+                      {(stats?.cityDistribution || []).map((c, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs font-semibold">
+                          <span className="text-neutral-400">{c.city}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-32 h-2 rounded-full bg-neutral-800 overflow-hidden">
+                              <div
+                                className="h-full bg-amber-400"
+                                style={{ width: `${stats?.totalUsers ? (c.count / stats.totalUsers) * 100 : 0}%` }}
+                              />
+                            </div>
+                            <span className="font-mono text-[11px] font-bold w-6 text-right">{c.count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Sở thích chung */}
+                <div className={`p-6 rounded-3xl border ${
+                  isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                }`}>
+                  <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-rose-500" />
+                    <span>Top Sở Thích Được Liên Kết Đồ Thị Nhiều Nhất (:HAS_INTEREST)</span>
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {(stats?.topInterests || []).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3.5 rounded-2xl border flex items-center justify-between ${
+                          isDark ? 'bg-[#192236] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <span className="text-xs font-bold">{item.name}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-black">
+                          {item.count} users
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ===================== TAB 2: QUẢN LÝ NGƯỜI DÙNG ===================== */}
+            {activeTab === 'users' && (
+              <div className="space-y-5 max-w-6xl mx-auto">
+                {/* Bộ lọc và tìm kiếm */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="relative flex-1 min-w-[260px]">
+                    <Search className="w-4 h-4 absolute left-3.5 top-3 text-neutral-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Tìm theo tên, email, thành phố..."
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs font-medium border focus:outline-none focus:border-rose-500 ${
+                        isDark ? 'bg-[#151c2c] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+                      }`}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={genderFilter}
+                      onChange={(e) => setGenderFilter(e.target.value)}
+                      className={`px-3 py-2.5 rounded-2xl text-xs font-bold border focus:outline-none ${
+                        isDark ? 'bg-[#151c2c] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <option value="">Tất cả giới tính</option>
+                      <option value="MALE">Nam</option>
+                      <option value="FEMALE">Nữ</option>
+                    </select>
+
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as any)}
+                      className={`px-3 py-2.5 rounded-2xl text-xs font-bold border focus:outline-none ${
+                        isDark ? 'bg-[#151c2c] border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <option value="all">Tất cả trạng thái</option>
+                      <option value="verified">Đã xác minh (Tích xanh)</option>
+                      <option value="banned">Bị khóa (Banned)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Bảng người dùng */}
+                <div className={`rounded-3xl border overflow-hidden shadow-lg ${
+                  isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                }`}>
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className={`border-b text-[11px] font-extrabold uppercase tracking-wider ${
+                        isDark ? 'border-neutral-800 bg-[#121824] text-neutral-400' : 'border-slate-200 bg-slate-50 text-slate-500'
+                      }`}>
+                        <th className="py-3 px-4">Người dùng</th>
+                        <th className="py-3 px-4">Giới tính & Tuổi</th>
+                        <th className="py-3 px-4">Thành phố</th>
+                        <th className="py-3 px-4 text-center">Likes Nhận</th>
+                        <th className="py-3 px-4 text-center">Matches</th>
+                        <th className="py-3 px-4 text-center">Trạng thái</th>
+                        <th className="py-3 px-4 text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-inherit/20 text-xs font-medium">
+                      {filteredUsers.map((u) => (
+                        <tr key={u.id} className={`transition-colors ${
+                          isDark ? 'hover:bg-neutral-800/40' : 'hover:bg-slate-50'
+                        }`}>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={u.photos?.[0] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'}
+                                alt={u.name}
+                                className="w-10 h-10 rounded-xl object-cover ring-1 ring-inherit"
+                              />
+                              <div>
+                                <div className="font-extrabold flex items-center gap-1">
+                                  <span>{u.name}</span>
+                                  {u.is_verified && <CheckCircle className="w-3.5 h-3.5 text-blue-400 fill-blue-400/20" />}
+                                  {u.is_banned && <Ban className="w-3.5 h-3.5 text-rose-500" />}
+                                </div>
+                                <div className="text-[11px] text-neutral-400">{u.email || u.id}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold mr-1.5 ${
+                              u.gender === 'MALE' ? 'bg-blue-500/20 text-blue-400' : 'bg-pink-500/20 text-pink-400'
+                            }`}>
+                              {u.gender === 'MALE' ? 'Nam' : 'Nữ'}
+                            </span>
+                            <span>{u.age || 20} tuổi</span>
+                          </td>
+                          <td className="py-3 px-4 text-neutral-400">{u.city || 'Chưa cập nhật'}</td>
+                          <td className="py-3 px-4 text-center font-bold text-amber-400">{u.likesReceived || 0}</td>
+                          <td className="py-3 px-4 text-center font-bold text-rose-400">{u.matchesCount || 0}</td>
+                          <td className="py-3 px-4 text-center">
+                            {u.is_banned ? (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-bold">Bị Khóa</span>
+                            ) : u.is_verified ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">Xác minh</span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 text-[10px] font-bold">Chuẩn</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Xem hồ sơ */}
+                              <button
+                                onClick={() => setSelectedUserForModal(u)}
+                                title="Xem hồ sơ chi tiết"
+                                className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-300 hover:text-white cursor-pointer"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+
+                              {/* Tích xanh */}
+                              <button
+                                onClick={() => handleToggleVerify(u.id, u.name)}
+                                title={u.is_verified ? 'Thu hồi tích xanh' : 'Cấp tích xanh xác thực'}
+                                className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+                                  u.is_verified
+                                    ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                                    : 'hover:bg-neutral-800 text-neutral-400 hover:text-blue-400'
+                                }`}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+
+                              {/* Khóa/Mở tài khoản */}
+                              <button
+                                onClick={() => handleToggleBan(u.id, u.name)}
+                                title={u.is_banned ? 'Mở khóa tài khoản' : 'Khóa tài khoản vi phạm'}
+                                className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+                                  u.is_banned
+                                    ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                                    : 'hover:bg-neutral-800 text-neutral-400 hover:text-rose-400'
+                                }`}
+                              >
+                                <Ban className="w-4 h-4" />
+                              </button>
+
+                              {/* Xóa người dùng */}
+                              <button
+                                onClick={() => handleDeleteUser(u.id, u.name)}
+                                title="Xóa người dùng vĩnh viễn khỏi Neo4j"
+                                className="p-1.5 rounded-lg hover:bg-rose-600/20 text-neutral-400 hover:text-rose-500 cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ===================== TAB 3: BÁO CÁO & KIỂM DUYỆT ===================== */}
+            {activeTab === 'reports' && (
+              <div className="space-y-5 max-w-4xl mx-auto">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-extrabold flex items-center gap-2">
+                      <ShieldAlert className="w-5 h-5 text-rose-500" />
+                      <span>Hàng Chờ Kiểm Duyệt Báo Cáo Vi Phạm (:BLOCKS)</span>
+                    </h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Danh sách tài khoản bị người dùng báo cáo vi phạm tiêu chuẩn cộng đồng.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 text-xs font-bold">
+                    {reports.length} báo cáo
+                  </span>
+                </div>
+
+                {reports.length === 0 ? (
+                  <div className={`p-12 rounded-3xl border text-center ${
+                    isDark ? 'bg-[#151c2c] border-neutral-800 text-neutral-400' : 'bg-white border-slate-200 text-slate-500'
+                  }`}>
+                    <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+                    <h4 className="font-bold text-sm">Hệ thống an toàn tuyệt đối!</h4>
+                    <p className="text-xs mt-1">Chưa ghi nhận báo cáo hoặc chặn người dùng nào chưa xử lý.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {reports.map((rep, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-4 rounded-3xl border flex items-center justify-between gap-4 ${
+                          isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={rep.targetAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'}
+                            alt={rep.targetName}
+                            className="w-12 h-12 rounded-2xl object-cover ring-2 ring-rose-500/40"
+                          />
+                          <div>
+                            <div className="text-xs font-extrabold flex items-center gap-2">
+                              <span>Người bị báo cáo: <strong className="text-rose-400">{rep.targetName}</strong></span>
+                              {rep.targetBanned && (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[9px] font-bold">Đã Khóa</span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-neutral-300 mt-0.5">
+                              Lý do: <span className="font-semibold text-amber-300">{rep.reason}</span>
+                            </div>
+                            <div className="text-[10px] text-neutral-500 mt-1">
+                              Báo cáo bởi: {rep.reporterName} • {new Date(rep.createdAt).toLocaleString('vi-VN')}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggleBan(rep.targetId, rep.targetName)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              rep.targetBanned
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                : 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/30'
+                            }`}
+                          >
+                            {rep.targetBanned ? 'Mở Khóa' : 'Khóa Ngay'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ===================== TAB 4: GHÉP ĐÔI THỦ CÔNG ===================== */}
+            {activeTab === 'force_match' && (
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-white mx-auto mb-3 shadow-xl shadow-rose-500/20">
+                    <Zap className="w-7 h-7 fill-white" />
+                  </div>
+                  <h3 className="text-lg font-black">Bilateral Force Match (Ghép Đôi Thủ Công)</h3>
+                  <p className="text-xs text-neutral-400 mt-1 max-w-md mx-auto">
+                    Tạo quan hệ <code className="text-rose-400">:MATCHED_WITH</code> hai chiều và phòng chat trực tiếp trên đồ thị Neo4j giữa 2 người dùng bất kỳ.
+                  </p>
+                </div>
+
+                <div className={`p-6 rounded-3xl border space-y-5 ${
+                  isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                }`}>
+                  <div>
+                    <label className="text-xs font-bold text-neutral-400 block mb-1.5">Chọn Người Dùng Thứ Nhất (User A)</label>
+                    <select
+                      value={forceUserA}
+                      onChange={(e) => setForceUserA(e.target.value)}
+                      className={`w-full p-3 rounded-2xl text-xs font-bold border focus:outline-none focus:border-rose-500 ${
+                        isDark ? 'bg-[#10141f] border-neutral-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <option value="">-- Chọn Người Dùng A --</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.gender === 'MALE' ? 'Nam' : 'Nữ'}, {u.age}t, {u.city})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-neutral-400 block mb-1.5">Chọn Người Dùng Thứ Hai (User B)</label>
+                    <select
+                      value={forceUserB}
+                      onChange={(e) => setForceUserB(e.target.value)}
+                      className={`w-full p-3 rounded-2xl text-xs font-bold border focus:outline-none focus:border-rose-500 ${
+                        isDark ? 'bg-[#10141f] border-neutral-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      <option value="">-- Chọn Người Dùng B --</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.gender === 'MALE' ? 'Nam' : 'Nữ'}, {u.age}t, {u.city})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleForceMatch}
+                    disabled={matchingInProgress || !forceUserA || !forceUserB}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 hover:opacity-95 text-white font-extrabold text-sm shadow-xl shadow-rose-600/30 transition-all hover:scale-102 active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Heart className="w-4 h-4 fill-white" />
+                    <span>{matchingInProgress ? 'Đang kích hoạt trên Neo4j...' : 'Kích Hoạt Ghép Đôi Ngay'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ===================== TAB 5: HỆ THỐNG & NEO4J ===================== */}
+            {activeTab === 'system' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className={`p-6 rounded-3xl border space-y-4 ${
+                  isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between pb-4 border-b border-inherit/40">
+                    <div>
+                      <h3 className="text-base font-extrabold flex items-center gap-2">
+                        <Database className="w-5 h-5 text-emerald-400" />
+                        <span>Neo4j AuraDB (Cloud Enterprise Instance)</span>
+                      </h3>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        Kết nối bảo mật qua giao thức mã hóa neo4j+s://
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold">
+                      Trực Tuyến
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div className={`p-4 rounded-2xl border ${
+                      isDark ? 'bg-[#10141f] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div className="text-[10px] text-neutral-400 font-bold uppercase">Độ Trễ Cypher Query</div>
+                      <div className="text-xl font-black text-emerald-400 mt-1">{stats?.dbLatencyMs || 0} ms</div>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${
+                      isDark ? 'bg-[#10141f] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div className="text-[10px] text-neutral-400 font-bold uppercase">Tổng Số User Nodes</div>
+                      <div className="text-xl font-black text-white mt-1">{stats?.totalUsers || 0} (:User)</div>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${
+                      isDark ? 'bg-[#10141f] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div className="text-[10px] text-neutral-400 font-bold uppercase">Tổng Quan Hệ Match</div>
+                      <div className="text-xl font-black text-rose-500 mt-1">{stats?.totalMatches || 0} (:MATCHED_WITH)</div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-inherit/40 flex items-center gap-3">
+                    <button
+                      onClick={loadData}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                    >
+                      ⚡ Quét và đo lường độ trễ tức thì
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* Modal xem chi tiết hồ sơ */}
+      <ProfileDetailModal
+        isOpen={Boolean(selectedUserForModal)}
+        profile={selectedUserForModal}
+        onClose={() => setSelectedUserForModal(null)}
+      />
     </div>
   );
 };
+
+export default AdminDashboard;
