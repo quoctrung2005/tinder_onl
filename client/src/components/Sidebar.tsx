@@ -365,7 +365,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản Tinder? Mọi tương hợp và tin nhắn sẽ mất vĩnh viễn.')) {
+                if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản Match? Mọi tương hợp và tin nhắn sẽ mất vĩnh viễn.')) {
                   onLogout();
                 }
               }}

@@ -18,7 +18,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess
 }) => {
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
-  const [email, setEmail] = useState('user@tinder.com');
+  const [email, setEmail] = useState('user@match.com');
   const [password, setPassword] = useState('password123');
   const [name, setName] = useState('');
   const [age, setAge] = useState(22);
@@ -246,7 +246,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="user@tinder.com"
+                placeholder="user@match.com"
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-rose-500"
               />
             </div>

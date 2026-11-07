@@ -301,7 +301,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             onClick={onBackToApp}
             className="px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-lg shadow-rose-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
           >
-            Quay lại Tinder
+            Quay lại Match
           </button>
           {onLogout && (
             <button
@@ -601,7 +601,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={onBackToApp}
-              title="Vào giao diện Quẹt thẻ Tinder"
+              title="Vào giao diện Quẹt thẻ Match"
               className={`p-2 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer ${
                 isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
@@ -1698,7 +1698,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           required
                           value={broadcastForm.title}
                           onChange={(e) => setBroadcastForm({ ...broadcastForm, title: e.target.value })}
-                          placeholder="VD: SỰ KIỆN TINDER GOLDEN HOUR"
+                          placeholder="VD: SỰ KIỆN MATCH GOLDEN HOUR"
                           className="w-full p-3 rounded-2xl border bg-inherit focus:outline-none focus:border-indigo-500 font-bold"
                         />
                       </div>
@@ -2108,7 +2108,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     required
                     value={newUserForm.email}
                     onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
-                    placeholder="lananh@tinder.com"
+                    placeholder="lananh@match.com"
                     className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none focus:border-rose-500"
                   />
                 </div>

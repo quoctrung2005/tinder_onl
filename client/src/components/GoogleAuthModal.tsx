@@ -87,7 +87,7 @@ export const GoogleAuthModal: React.FC<GoogleAuthModalProps> = ({
             Đăng Nhập Bằng Google
           </h2>
           <p className="text-xs text-neutral-400 mt-1">
-            để tiếp tục tới <span className="font-semibold text-rose-400">Tinder Web</span>
+            để tiếp tục tới <span className="font-semibold text-rose-400">Match Web</span>
           </p>
         </div>
 

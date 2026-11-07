@@ -215,7 +215,7 @@ export const VipCheckoutModal: React.FC<VipCheckoutModalProps> = ({
 
             <div className="w-52 h-52 mx-auto bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TINDER_VIP_${selectedPkg.id}_${selectedPkg.price}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MATCH_VIP_${selectedPkg.id}_${selectedPkg.price}`}
                 alt="QR Code"
                 className="w-full h-full object-contain"
               />

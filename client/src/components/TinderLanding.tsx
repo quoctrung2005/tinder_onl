@@ -63,7 +63,7 @@ export const MatchLanding: React.FC<MatchLandingProps> = ({ onAuthSuccess }) => 
     setLoadingDemo(true);
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', {
-        email: 'user@tinder.com',
+        email: 'user@match.com',
         password: 'password123'
       });
       localStorage.setItem('tinder_token', res.data.token);
@@ -186,7 +186,7 @@ export const MatchLanding: React.FC<MatchLandingProps> = ({ onAuthSuccess }) => 
             className="gsap-3d-btn w-full py-3 rounded-full border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm will-change-transform"
           >
             <Sparkles className="w-4 h-4" />
-            <span>{loadingDemo ? 'Đang đăng nhập demo...' : '1-Click Đăng nhập Demo (user@tinder.com)'}</span>
+            <span>{loadingDemo ? 'Đang đăng nhập demo...' : '1-Click Đăng nhập Demo (user@match.com)'}</span>
           </button>
         </div>
 
