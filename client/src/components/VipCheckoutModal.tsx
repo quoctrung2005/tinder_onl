@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { X, Check, Sparkles, CreditCard, QrCode } from 'lucide-react';
+import { X, Check, Sparkles, CreditCard, QrCode, AlertCircle } from 'lucide-react';
 import type { UserProfile } from '../types';
 
 interface VipCheckoutModalProps {
@@ -75,12 +75,14 @@ export const VipCheckoutModal: React.FC<VipCheckoutModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'MOMO' | 'VNPAY'>('MOMO');
   const [step, setStep] = useState<'select' | 'qr' | 'success'>('select');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleConfirmPayment = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       const token = localStorage.getItem('tinder_token');
       await axios.post('http://localhost:5000/api/users/upgrade-vip', {
         packageType: selectedPkg.id,
@@ -101,7 +103,10 @@ export const VipCheckoutModal: React.FC<VipCheckoutModalProps> = ({
 
       setStep('success');
     } catch (err: any) {
-      alert('Lỗi kích hoạt VIP: ' + (err.response?.data?.error || err.message));
+      const msg = err.message === 'Network Error'
+        ? 'Không thể kết nối máy chủ Match (Port 5000). Đang tự động kết nối lại, vui lòng thử lại sau giây lát!'
+        : (err.response?.data?.error || err.message || 'Lỗi kích hoạt VIP');
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -127,6 +132,19 @@ export const VipCheckoutModal: React.FC<VipCheckoutModalProps> = ({
               <h2 className="text-2xl font-black tracking-tight">Nâng Cấp Match VIP</h2>
               <p className="text-xs text-neutral-400 mt-0.5">Mở khóa mọi đặc quyền hẹn hò độc quyền số 1 thế giới</p>
             </div>
+
+            {errorMessage && (
+              <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/60 text-rose-300 text-xs font-bold flex items-center gap-2 animate-pulse">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span className="flex-1">{errorMessage}</span>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-rose-400 hover:text-white p-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Danh sách 3 gói */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -235,6 +253,13 @@ export const VipCheckoutModal: React.FC<VipCheckoutModalProps> = ({
                 <span className="font-mono text-neutral-300">TNDR_{Math.floor(Math.random() * 899999 + 100000)}</span>
               </div>
             </div>
+
+            {errorMessage && (
+              <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/60 text-rose-300 text-xs font-bold flex items-center gap-2 max-w-sm mx-auto animate-pulse">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span className="flex-1">{errorMessage}</span>
+              </div>
+            )}
 
             <div className="flex gap-3 max-w-sm mx-auto">
               <button

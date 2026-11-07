@@ -141,6 +141,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         <img
           src={profile.photos[0]}
           alt={profile.name}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80";
+          }}
           className="w-full h-full object-cover brightness-90"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />

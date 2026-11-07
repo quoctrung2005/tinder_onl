@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { X, Globe, MapPin, Search, Check, Sparkles, Navigation } from 'lucide-react';
+import { X, Globe, MapPin, Search, Check, Sparkles, Navigation, AlertCircle } from 'lucide-react';
 import type { UserProfile } from '../types';
 
 interface PassportModalProps {
@@ -45,6 +45,7 @@ export const PassportModal: React.FC<PassportModalProps> = ({
   const [customCountry, setCustomCountry] = useState('Việt Nam');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -59,6 +60,7 @@ export const PassportModal: React.FC<PassportModalProps> = ({
   const handleApplyPassport = async (cityToApply: string, countryToApply: string) => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       const token = localStorage.getItem('tinder_token');
       await axios.post(
         'http://localhost:5000/api/users/passport',
@@ -74,7 +76,10 @@ export const PassportModal: React.FC<PassportModalProps> = ({
       }, 1500);
     } catch (err: any) {
       console.error('Lỗi khi kích hoạt Passport:', err);
-      alert('Không thể đổi vị trí: ' + (err.response?.data?.error || err.message));
+      const msg = err.message === 'Network Error'
+        ? 'Không thể kết nối máy chủ Match (Port 5000). Đang tự động kết nối lại, vui lòng thử lại sau giây lát!'
+        : (err.response?.data?.error || err.message || 'Lỗi khi cập nhật vị trí');
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -124,6 +129,19 @@ export const PassportModal: React.FC<PassportModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/60 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-bounce">
               <Check className="w-4 h-4 shrink-0" />
               <span>{successMessage}</span>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/60 text-rose-300 text-xs font-bold flex items-center gap-2 animate-pulse">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span className="flex-1">{errorMessage}</span>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-rose-400 hover:text-white p-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
