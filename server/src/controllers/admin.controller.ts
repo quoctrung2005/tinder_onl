@@ -250,7 +250,7 @@ export const createAdminUser = async (req: Request, res: Response) => {
       age: Number(age) || 22,
       gender: gender || 'FEMALE',
       city: city || 'Hồ Chí Minh',
-      bio: bio || 'Thành viên mới của cộng đồng Tinder.',
+      bio: bio || 'Thành viên mới của cộng đồng Match.',
       role: role === 'admin' ? 'admin' : 'user',
       photos: finalPhotos,
       interests: finalInterests
@@ -681,12 +681,12 @@ export const getAdminRevenue = async (req: Request, res: Response) => {
 
     // Dữ liệu giao dịch mẫu thực tế kết hợp CSDL
     const defaultTransactions = [
-      { id: 'TXN_20261107_01', userName: 'Bảo Châu', packageType: 'Tinder Gold (1 Tháng)', paymentMethod: 'MoMo QR', amount: 199000, status: 'Thành công', createdAt: new Date(Date.now() - 15 * 60000).toISOString() },
-      { id: 'TXN_20261107_02', userName: 'Alex Trần', packageType: 'Tinder Platinum (6 Tháng)', paymentMethod: 'VNPay', amount: 899000, status: 'Thành công', createdAt: new Date(Date.now() - 45 * 60000).toISOString() },
+      { id: 'TXN_20261107_01', userName: 'Bảo Châu', packageType: 'Match Gold (1 Tháng)', paymentMethod: 'MoMo QR', amount: 199000, status: 'Thành công', createdAt: new Date(Date.now() - 15 * 60000).toISOString() },
+      { id: 'TXN_20261107_02', userName: 'Alex Trần', packageType: 'Match Platinum (6 Tháng)', paymentMethod: 'VNPay', amount: 899000, status: 'Thành công', createdAt: new Date(Date.now() - 45 * 60000).toISOString() },
       { id: 'TXN_20261107_03', userName: 'Meo', packageType: 'Gói 5 Super Likes', paymentMethod: 'MoMo QR', amount: 69000, status: 'Thành công', createdAt: new Date(Date.now() - 2 * 3600000).toISOString() },
-      { id: 'TXN_20261107_04', userName: 'Tue Vy', packageType: 'Tinder Gold (1 Năm)', paymentMethod: 'Thẻ ATM', amount: 1499000, status: 'Thành công', createdAt: new Date(Date.now() - 5 * 3600000).toISOString() },
-      { id: 'TXN_20261107_05', userName: 'Phương Anh', packageType: 'Tinder Boost (x1)', paymentMethod: 'VNPay', amount: 49000, status: 'Thành công', createdAt: new Date(Date.now() - 8 * 3600000).toISOString() },
-      { id: 'TXN_20261107_06', userName: 'Quỳnh Chi', packageType: 'Tinder Plus (1 Tháng)', paymentMethod: 'MoMo QR', amount: 99000, status: 'Thành công', createdAt: new Date(Date.now() - 12 * 3600000).toISOString() }
+      { id: 'TXN_20261107_04', userName: 'Tue Vy', packageType: 'Match Gold (1 Năm)', paymentMethod: 'Thẻ ATM', amount: 1499000, status: 'Thành công', createdAt: new Date(Date.now() - 5 * 3600000).toISOString() },
+      { id: 'TXN_20261107_05', userName: 'Phương Anh', packageType: 'Match Boost (x1)', paymentMethod: 'VNPay', amount: 49000, status: 'Thành công', createdAt: new Date(Date.now() - 8 * 3600000).toISOString() },
+      { id: 'TXN_20261107_06', userName: 'Quỳnh Chi', packageType: 'Match Plus (1 Tháng)', paymentMethod: 'MoMo QR', amount: 99000, status: 'Thành công', createdAt: new Date(Date.now() - 12 * 3600000).toISOString() }
     ];
 
     const allTxns = [...dbTransactions, ...defaultTransactions];

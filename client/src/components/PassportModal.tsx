@@ -95,7 +95,7 @@ export const PassportModal: React.FC<PassportModalProps> = ({
           <div className="flex items-center gap-2 mb-1">
             <Globe className="w-6 h-6 text-cyan-300 animate-spin-slow" />
             <span className="text-[11px] font-black tracking-widest uppercase bg-white/20 px-2.5 py-0.5 rounded-full">
-              Tinder Passport™
+              Match Passport™
             </span>
           </div>
 
@@ -247,7 +247,7 @@ export const PassportModal: React.FC<PassportModalProps> = ({
             ) : (
               <>
                 <Globe className="w-4 h-4" />
-                <span>Kích hoạt Tinder Passport™</span>
+                <span>Kích hoạt Match Passport™</span>
               </>
             )}
           </button>

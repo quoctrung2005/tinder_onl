@@ -161,7 +161,7 @@ export const PhotoVerificationModal: React.FC<PhotoVerificationModalProps> = ({
                   Nhận Huy Hiệu Tích Xanh Chính Chủ
                 </h4>
                 <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
-                  Tinder AI sẽ so sánh một video selfie ngắn với các bức ảnh trên hồ sơ của bạn để đảm bảo bạn là người thật 100%.
+                  Match AI sẽ so sánh một video selfie ngắn với các bức ảnh trên hồ sơ của bạn để đảm bảo bạn là người thật 100%.
                 </p>
               </div>
 

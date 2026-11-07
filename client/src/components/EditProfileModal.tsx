@@ -154,7 +154,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       );
       setIsVerified(true);
       setShowWebcam(false);
-      alert('🎉 Chúc mừng! Bạn đã nhận dấu Tích Xanh xác thực chính chủ trên Tinder.');
+      alert('🎉 Chúc mừng! Bạn đã nhận dấu Tích Xanh xác thực chính chủ trên Match.');
     } catch (error) {
       console.error('Lỗi verify:', error);
     } finally {
@@ -337,7 +337,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  Xác thực hình ảnh (Tích xanh Tinder)
+                  Xác thực hình ảnh (Tích xanh Match)
                   {isVerified && <CheckCircle className="w-3.5 h-3.5 text-sky-400 fill-sky-400" />}
                 </h4>
                 <p className="text-[11px] text-neutral-400 mt-0.5">
@@ -449,7 +449,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <div>
                 <h4 className="text-xs font-bold text-white">Ảnh thông minh (Smart Photos)</h4>
                 <p className="text-[11px] text-neutral-400 mt-0.5">
-                  Tinder tự động đưa ảnh có tỷ lệ quẹt phải cao nhất lên làm ảnh bìa.
+                  Match tự động đưa ảnh có tỷ lệ quẹt phải cao nhất lên làm ảnh bìa.
                 </p>
               </div>
               <button
@@ -509,7 +509,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <div>
                 <h4 className="text-xs font-bold text-white">Kết nối Instagram</h4>
                 <p className="text-[11px] text-neutral-400 mt-0.5">
-                  Hiển thị lưới các ảnh gần nhất từ trang Instagram lên hồ sơ Tinder.
+                  Hiển thị lưới các ảnh gần nhất từ trang Instagram lên hồ sơ Match.
                 </p>
               </div>
             </div>
@@ -874,7 +874,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </label>
             </div>
             <p className="text-[11px] text-neutral-400">
-              Nhập số điện thoại hoặc email của người quen, người yêu cũ để Tinder không bao giờ hiển thị hồ sơ của họ cho bạn và ngược lại.
+              Nhập số điện thoại hoặc email của người quen, người yêu cũ để Match không bao giờ hiển thị hồ sơ của họ cho bạn và ngược lại.
             </p>
 
             <div className="flex gap-2">

@@ -13,7 +13,7 @@ interface VipCheckoutModalProps {
 const PACKAGES = [
   {
     id: 'GOLD',
-    name: 'Tinder Gold™',
+    name: 'Match Gold™',
     price: 199000,
     priceLabel: '199.000 đ',
     duration: '1 Tháng',
@@ -23,7 +23,7 @@ const PACKAGES = [
       'Lượt thích không giới hạn (Unlimited Likes)',
       '1 Lượt Tăng tốc Boost miễn phí mỗi tháng',
       '5 Siêu thích (Super Likes) mỗi tuần',
-      'Hộ chiếu Tinder Passport™ quẹt thẻ toàn cầu',
+      'Hộ chiếu Match Passport™ quẹt thẻ toàn cầu',
       'Hồi lại lượt quẹt thẻ (Rewind) không giới hạn'
     ],
     bgGradient: 'from-amber-500/20 via-rose-500/10 to-amber-500/20',
@@ -32,13 +32,13 @@ const PACKAGES = [
   },
   {
     id: 'PLATINUM',
-    name: 'Tinder Platinum™',
+    name: 'Match Platinum™',
     price: 399000,
     priceLabel: '399.000 đ',
     duration: '1 Tháng',
     badge: 'Đặc quyền Tối Thượng',
     features: [
-      'Bao gồm toàn bộ đặc quyền Tinder Gold™',
+      'Bao gồm toàn bộ đặc quyền Match Gold™',
       'Ưu tiên hiển thị lượt thích (Priority Likes)',
       'Đính kèm tin nhắn vào Super Like trước khi match',
       'Xem lại các lượt thích đã gửi trong 7 ngày qua'
@@ -49,7 +49,7 @@ const PACKAGES = [
   },
   {
     id: 'PLUS',
-    name: 'Tinder Plus®',
+    name: 'Match Plus®',
     price: 99000,
     priceLabel: '99.000 đ',
     duration: '1 Tháng',
@@ -57,7 +57,7 @@ const PACKAGES = [
     features: [
       'Lượt thích không giới hạn',
       'Hồi lại lượt quẹt thẻ không giới hạn',
-      'Hộ chiếu Tinder Passport™'
+      'Hộ chiếu Match Passport™'
     ],
     bgGradient: 'from-rose-500/15 via-neutral-900 to-rose-500/15',
     borderColor: 'border-rose-500/50',
@@ -124,7 +124,7 @@ export const VipCheckoutModal: React.FC<VipCheckoutModalProps> = ({
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center mx-auto mb-2 text-neutral-950 shadow-lg shadow-amber-500/20">
                 <Sparkles className="w-6 h-6 fill-neutral-950" />
               </div>
-              <h2 className="text-2xl font-black tracking-tight">Nâng Cấp Tinder VIP</h2>
+              <h2 className="text-2xl font-black tracking-tight">Nâng Cấp Match VIP</h2>
               <p className="text-xs text-neutral-400 mt-0.5">Mở khóa mọi đặc quyền hẹn hò độc quyền số 1 thế giới</p>
             </div>
 

@@ -8,7 +8,7 @@ import {
   Briefcase, GraduationCap
 } from 'lucide-react';
 
-interface TinderCardProps {
+interface MatchCardProps {
   profile: UserProfile;
   currentUser?: UserProfile | null;
   isFront: boolean;
@@ -21,7 +21,7 @@ interface TinderCardProps {
   dragY?: MotionValue<number>;
 }
 
-export const TinderCard: React.FC<TinderCardProps> = ({
+export const MatchCard: React.FC<MatchCardProps> = ({
   profile,
   currentUser: _currentUser,
   isFront,

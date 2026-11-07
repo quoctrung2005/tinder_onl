@@ -237,7 +237,7 @@ export const upgradeVip = async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
-      message: `Chúc mừng bạn đã nâng cấp thành công gói Tinder ${packageType}! Đặc quyền VIP đã được kích hoạt.`,
+      message: `Chúc mừng bạn đã nâng cấp thành công gói Match ${packageType}! Đặc quyền VIP đã được kích hoạt.`,
       transactionId: txId
     });
   } catch (error: any) {
@@ -247,7 +247,7 @@ export const upgradeVip = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Hộ chiếu Tinder (Tinder Passport™ - Đổi vị trí sang bất kỳ thành phố nào trên thế giới)
+// Hộ chiếu Tinder (Match Passport™ - Đổi vị trí sang bất kỳ thành phố nào trên thế giới)
 export const updatePassport = async (req: AuthRequest, res: Response) => {
   const userId = req.userId || 'user_me';
   const { city, country } = req.body;
@@ -263,7 +263,7 @@ export const updatePassport = async (req: AuthRequest, res: Response) => {
 
     res.json({
       success: true,
-      message: `Đã kích hoạt Tinder Passport™ tới ${city}! Hồ sơ của bạn sẽ hiển thị cho những người dùng tại đây.`
+      message: `Đã kích hoạt Match Passport™ tới ${city}! Hồ sơ của bạn sẽ hiển thị cho những người dùng tại đây.`
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

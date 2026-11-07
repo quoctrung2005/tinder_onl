@@ -170,7 +170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     age: 22,
     gender: 'FEMALE',
     city: 'Hồ Chí Minh',
-    bio: 'Thành viên mới gia nhập Tinder.',
+    bio: 'Thành viên mới gia nhập Match.',
     role: 'user',
     photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
     interests: 'Cà phê, Du lịch, Âm nhạc'
@@ -400,7 +400,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         age: 22,
         gender: 'FEMALE',
         city: 'Hồ Chí Minh',
-        bio: 'Thành viên mới gia nhập Tinder.',
+        bio: 'Thành viên mới gia nhập Match.',
         role: 'user',
         photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
         interests: 'Cà phê, Du lịch, Âm nhạc'
@@ -533,7 +533,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `tinder_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `match_users_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -852,13 +852,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {stats && <span className="font-mono text-[10px] opacity-80">({stats.dbLatencyMs}ms)</span>}
               </div>
 
-              {/* Nút Vào Tinder Web */}
+              {/* Nút Vào Match Web */}
               <button
                 onClick={onBackToApp}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-rose-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Vào Tinder Web</span>
+                <span>Vào Match Web</span>
               </button>
             </div>
           </header>
@@ -1539,7 +1539,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
                   }`}>
                     <div className="flex items-center justify-between text-neutral-400 text-xs font-bold">
-                      <span>Thành Viên Tinder Gold</span>
+                      <span>Thành Viên Match Gold</span>
                       <Sparkles className="w-4 h-4 text-rose-500" />
                     </div>
                     <div className="text-2xl font-black text-rose-500 mt-2">
@@ -1760,7 +1760,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               {broadcastForm.message || 'Nội dung thông báo mẫu hiển thị tại đây...'}
                             </p>
                             <span className="text-[9px] text-white/60 block mt-2">
-                              Phát lúc: {new Date().toLocaleTimeString('vi-VN')} • Tinder Community
+                              Phát lúc: {new Date().toLocaleTimeString('vi-VN')} • Match Community
                             </span>
                           </div>
                         </div>
@@ -1987,7 +1987,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </label>
 
                           <label className="flex items-center justify-between cursor-pointer">
-                            <span className="font-bold">Kích Hoạt Tinder Passport™ Toàn Cầu</span>
+                            <span className="font-bold">Kích Hoạt Match Passport™ Toàn Cầu</span>
                             <input
                               type="checkbox"
                               checked={systemConfig.enablePassport}

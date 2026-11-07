@@ -53,7 +53,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           age,
           gender,
           pref_gender: gender === 'MALE' ? ['FEMALE'] : ['MALE'],
-          bio: 'Thành viên mới của Tinder ✨ Tìm kiếm tình yêu đích thực.',
+          bio: 'Thành viên mới của Match ✨ Tìm kiếm tình yêu đích thực.',
           city,
           photos: [
             gender === 'MALE'
@@ -79,13 +79,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleAdminLogin = async () => {
-    setEmail('admin@tinder.com');
+    setEmail('admin@match.com');
     setPassword('admin123');
     setError('');
     setLoading(true);
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', {
-        email: 'admin@tinder.com',
+        email: 'admin@match.com',
         password: 'admin123'
       });
       localStorage.setItem('tinder_token', res.data.token);
@@ -99,13 +99,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleDemoLogin = async () => {
-    setEmail('user@tinder.com');
+    setEmail('user@match.com');
     setPassword('password123');
     setError('');
     setLoading(true);
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', {
-        email: 'user@tinder.com',
+        email: 'user@match.com',
         password: 'password123'
       });
       localStorage.setItem('tinder_token', res.data.token);

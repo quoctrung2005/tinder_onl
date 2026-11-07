@@ -83,7 +83,8 @@ export const login = async (req: AuthRequest, res: Response) => {
 
   try {
     const result = await session.run(`
-      MATCH (u:User {email: $email})
+      MATCH (u:User)
+      WHERE u.email = $email OR ($email ENDS WITH '@match.com' AND u.email = replace($email, '@match.com', '@tinder.com'))
       OPTIONAL MATCH (u)-[:HAS_INTEREST]->(i:Interest)
       WITH u, collect(DISTINCT i.name) AS interests
       RETURN u {.*, interests: interests} AS user

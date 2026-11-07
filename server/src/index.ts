@@ -100,7 +100,7 @@ io.on('connection', (socket) => {
 
 // Khởi động server
 httpServer.listen(PORT, async () => {
-  console.log(`🚀 Tinder Server đang chạy tại: http://localhost:${PORT}`);
+  console.log(`🚀 Match Server đang chạy tại: http://localhost:${PORT}`);
   try {
     await initNeo4j();
   } catch (err) {

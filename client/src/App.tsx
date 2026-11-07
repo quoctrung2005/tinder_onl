@@ -286,7 +286,7 @@ export function App() {
   if (!token) {
     return (
       <TinderLanding
-        onAuthSuccess={(newToken, user) => {
+        onAuthSuccess={(newToken: string, user: UserProfile) => {
           setToken(newToken);
           setCurrentUser(user);
           if (user.role === 'admin') {
@@ -313,7 +313,7 @@ export function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-black font-sans">
-      {/* 1. Sidebar bên trái (360px - Chuẩn Tinder Web) */}
+      {/* 1. Sidebar bên trái (360px - Chuẩn Match Web) */}
       <Sidebar
         currentUser={currentUser}
         matches={matches}
@@ -448,7 +448,7 @@ export function App() {
         onActivateGold={() => {
           setIsGoldModalOpen(false);
           setIsLikesYouMode(true);
-          setBoostToastMessage('🎉 Đã kích hoạt Tinder Gold! Đang mở danh sách Ai Đã Thích Bạn.');
+          setBoostToastMessage('🎉 Đã kích hoạt Match Gold! Đang mở danh sách Ai Đã Thích Bạn.');
           setTimeout(() => setBoostToastMessage(null), 3500);
         }}
       />
@@ -492,7 +492,7 @@ export function App() {
         }}
       />
 
-      {/* 5. Modal Sửa Hồ sơ Chuẩn Tinder (Lưới 9 ô ảnh, upload trực tiếp, bio, sở thích, cài đặt tìm kiếm, chặn) */}
+      {/* 5. Modal Sửa Hồ sơ Chuẩn Match (Lưới 9 ô ảnh, upload trực tiếp, bio, sở thích, cài đặt tìm kiếm, chặn) */}
       {currentUser && (
         <EditProfileModal
           isOpen={isEditProfileOpen}
@@ -536,7 +536,7 @@ export function App() {
         }}
       />
 
-      {/* 9. Modal Hộ Chiếu Tinder Passport™ (Đổi vị trí toàn cầu) */}
+      {/* 9. Modal Hộ Chiếu Match Passport™ (Đổi vị trí toàn cầu) */}
       <PassportModal
         isOpen={isPassportOpen}
         currentUser={currentUser}
@@ -561,12 +561,12 @@ export function App() {
         onClose={() => setIsPhotoVerifyOpen(false)}
         onSuccess={(updated) => {
           setCurrentUser(updated);
-          setBoostToastMessage('✨ Chúc mừng! Hồ sơ của bạn đã nhận Tích Xanh Chính Chủ Tinder AI.');
+          setBoostToastMessage('✨ Chúc mừng! Hồ sơ của bạn đã nhận Tích Xanh Chính Chủ Match AI.');
           setTimeout(() => setBoostToastMessage(null), 3500);
         }}
       />
 
-      {/* 11. Modal Nâng Cấp Tinder VIP (Plus, Gold, Platinum) */}
+      {/* 11. Modal Nâng Cấp Match VIP (Plus, Gold, Platinum) */}
       <VipCheckoutModal
         isOpen={isVipCheckoutOpen}
         currentUser={currentUser}
@@ -574,7 +574,7 @@ export function App() {
         onSuccess={(updated) => {
           setCurrentUser(updated);
           setIsGoldModalOpen(false);
-          setBoostToastMessage('👑 Đặc quyền Tinder VIP đã được kích hoạt thành công!');
+          setBoostToastMessage('👑 Đặc quyền Match VIP đã được kích hoạt thành công!');
           setTimeout(() => setBoostToastMessage(null), 3500);
         }}
       />

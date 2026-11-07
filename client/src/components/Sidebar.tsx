@@ -149,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={onOpenPassport}
-              title="Hộ chiếu Tinder Passport™ - Đổi địa điểm toàn cầu"
+              title="Hộ chiếu Match Passport™ - Đổi địa điểm toàn cầu"
               className="w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-cyan-300 hover:text-cyan-200 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
             >
               <Globe className="w-4 h-4" />
@@ -181,14 +181,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs">
                   <Crown className="w-4 h-4 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" />
-                  <span>{currentUser?.is_gold ? 'Tinder Gold™ Đang Hoạt Động' : 'Nâng Cấp Tinder VIP'}</span>
+                  <span>{currentUser?.is_gold ? 'Match Gold™ Đang Hoạt Động' : 'Nâng Cấp Match VIP'}</span>
                 </div>
                 <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-neutral-950 px-2 py-0.5 rounded-full">
                   {currentUser?.is_gold ? 'ĐÃ KÍCH HOẠT' : 'ƯU ĐÃI 50%'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-300 mt-1">
-                Xem ai đã thích bạn, vô hạn Likes, Rewind & Tinder Passport™ toàn cầu.
+                Xem ai đã thích bạn, vô hạn Likes, Rewind & Match Passport™ toàn cầu.
               </p>
             </div>
           )}
@@ -202,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Globe className="w-4 h-4 text-cyan-400" />
-                <span>Hộ Chiếu Tinder Passport™</span>
+                <span>Hộ Chiếu Match Passport™</span>
               </div>
               <span className="text-[10px] text-cyan-300 font-bold bg-cyan-500/15 px-2 py-0.5 rounded-full">
                 {currentUser?.city || 'Hồ Chí Minh'}
@@ -319,7 +319,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Nút Chia sẻ Tinder & ĐĂNG XUẤT */}
+          {/* Nút Chia sẻ Match & ĐĂNG XUẤT */}
           <div className="pt-2 space-y-2.5 border-t border-neutral-800/80">
             <button
               type="button"
@@ -393,7 +393,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <div>
                     <div className="text-xs font-black text-amber-300 flex items-center gap-1.5">
-                      <span>{currentUser?.is_gold ? `Tinder ${currentUser.vip_level || 'Gold'} (Đã kích hoạt)` : 'Đăng Ký Tinder Gold™ VIP'}</span>
+                      <span>{currentUser?.is_gold ? `Match ${currentUser.vip_level || 'Gold'} (Đã kích hoạt)` : 'Đăng Ký Match Gold™ VIP'}</span>
                       <Sparkles className="w-3 h-3 text-amber-300 animate-spin-slow" />
                     </div>
                     <div className="text-[10px] text-neutral-300 mt-0.5">
@@ -414,7 +414,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   type="button"
                   onClick={onOpenPassport}
                   className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-cyan-500/50 text-neutral-300 hover:text-cyan-300 flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm group"
-                  title="Hộ chiếu Tinder Passport™ - Đổi địa điểm khám phá toàn cầu"
+                  title="Hộ chiếu Match Passport™ - Đổi địa điểm khám phá toàn cầu"
                 >
                   <Globe className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                   <span className="text-[10px] font-bold truncate max-w-full">

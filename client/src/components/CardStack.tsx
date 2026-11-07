@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'framer-motion';
 import type { UserProfile } from '../types';
-import { TinderCard } from './TinderCard';
+import { MatchCard } from './TinderCard';
 import { RotateCcw, X, Star, Heart, RefreshCw, Send, Zap } from 'lucide-react';
 import { AntigravityCanvas } from './AntigravityCanvas';
 
@@ -243,7 +243,7 @@ export const CardStack: React.FC<CardStackProps> = ({
             <AnimatePresence mode="popLayout">
               {/* Thẻ thứ 2 nằm dưới */}
               {nextCard && (
-                <TinderCard
+                <MatchCard
                   key={nextCard.id}
                   profile={nextCard}
                   currentUser={currentUser}
@@ -257,12 +257,12 @@ export const CardStack: React.FC<CardStackProps> = ({
 
               {/* Thẻ đầu tiên (đang tương tác với cử chỉ vuốt) */}
               {currentCard && (
-                <TinderCard
+                <MatchCard
                   key={currentCard.id}
                   profile={currentCard}
                   currentUser={currentUser}
                   isFront={true}
-                  onSwipe={(dir) => {
+                  onSwipe={(dir: 'left' | 'right' | 'up') => {
                     spawnParticles(dir === 'right' ? 'like' : dir === 'up' ? 'super' : 'nope');
                     setSwipeExitDir(dir);
                     dragX.set(0);

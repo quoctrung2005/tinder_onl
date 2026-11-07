@@ -44,7 +44,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [lifestyleWeekend, setLifestyleWeekend] = useState('Không hút thuốc');
   const [lifestylePhone, setLifestylePhone] = useState('Thời gian bên nhau');
 
-  // Kiểm soát hồ sơ (Tinder Plus badge)
+  // Kiểm soát hồ sơ (Match Plus badge)
   const [hideAge, setHideAge] = useState(false);
   const [hideDistance, setHideDistance] = useState(false);
 

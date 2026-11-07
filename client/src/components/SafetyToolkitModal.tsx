@@ -120,7 +120,7 @@ export const SafetyToolkitModal: React.FC<SafetyToolkitModalProps> = ({
                 <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
                 <p className="text-xs font-bold text-white">Đã tiếp nhận báo cáo của bạn!</p>
                 <p className="text-[11px] text-neutral-400">
-                  Đội ngũ an toàn Tinder sẽ xem xét và xử lý trong vòng 24 giờ.
+                  Đội ngũ an toàn Match sẽ xem xét và xử lý trong vòng 24 giờ.
                 </p>
               </div>
             ) : (

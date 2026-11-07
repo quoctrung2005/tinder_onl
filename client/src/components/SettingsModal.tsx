@@ -175,7 +175,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span className="font-bold text-neutral-200">Khoảng cách Ưu tiên</span>
               <span className="text-neutral-200 font-bold text-xs">{maxDistance} km</span>
             </div>
-            {/* Thanh trượt đỏ chuẩn Tinder */}
+            {/* Thanh trượt đỏ chuẩn Match */}
             <input
               type="range"
               min={5}
@@ -539,7 +539,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <UserX className="w-4 h-4" /> Quản lý danh sách chặn (Block Contacts)
             </div>
             <p className="text-[11px] text-neutral-400">
-              Nhập email hoặc SĐT người quen để Tinder không hiển thị hồ sơ của nhau.
+              Nhập email hoặc SĐT người quen để Match không hiển thị hồ sơ của nhau.
             </p>
             <div className="flex gap-2">
               <input

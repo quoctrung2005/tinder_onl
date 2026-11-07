@@ -28,7 +28,7 @@ async function initRoles() {
         a.gender = 'MALE',
         a.pref_gender = ['FEMALE', 'MALE'],
         a.city = 'Hồ Chí Minh',
-        a.bio = 'Tài khoản Quản trị viên cấp cao Tinder Dating Platform 🛡️',
+        a.bio = 'Tài khoản Quản trị viên cấp cao Match Dating Platform 🛡️',
         a.role = 'admin',
         a.is_verified = true,
         a.is_banned = false,

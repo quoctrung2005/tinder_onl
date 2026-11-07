@@ -7,11 +7,11 @@ import { AuthModal } from './AuthModal';
 import { GoogleAuthModal } from './GoogleAuthModal';
 import { AntigravityCanvas } from './AntigravityCanvas';
 
-interface TinderLandingProps {
+interface MatchLandingProps {
   onAuthSuccess: (token: string, user: UserProfile) => void;
 }
 
-export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess }) => {
+export const MatchLanding: React.FC<MatchLandingProps> = ({ onAuthSuccess }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
@@ -81,7 +81,7 @@ export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess }) =
       <div className="absolute inset-0 z-0">
         <img
           src="https://images.unsplash.com/photo-1522264879685-61266b0cf9eb?auto=format&fit=crop&w=2000&q=80"
-          alt="Tinder Background"
+          alt="Match Background"
           className="w-full h-full object-cover object-center filter brightness-[0.38] contrast-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/75" />
@@ -214,7 +214,7 @@ export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess }) =
 
       {/* 3. FOOTER */}
       <footer className="relative z-10 w-full py-5 text-center border-t border-neutral-900/80 bg-black/60 backdrop-blur-sm text-xs text-neutral-500">
-        © 2026 Tinder Web Clone • Đồ án môn học Cơ sở dữ liệu Đồ thị Neo4j & Fullstack React/Node.js
+        © 2026 Match Web Clone • Đồ án môn học Cơ sở dữ liệu Đồ thị Neo4j & Fullstack React/Node.js
       </footer>
 
       {/* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */}
@@ -240,3 +240,5 @@ export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess }) =
     </div>
   );
 };
+
+export { MatchLanding as TinderLanding };
