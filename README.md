@@ -104,6 +104,15 @@ $$\text{Total Score} = \text{Score}_{\text{Jaccard}} (35\%) + \text{Score}_{\tex
 - Tích hợp bài hát chủ đề Spotify (Spotify Anthem).
 - Tích hợp lưới album ảnh gần đây từ Instagram.
 
+### 🛡️ 6. Trung tâm Quản trị Toàn diện (Admin Console & Dashboard)
+- **Truy cập nhanh:** Truy cập thuận tiện từ Nút "Admin Console" tại Header Landing Page hoặc từ biểu tượng Khiên / Menu Tài khoản trên Sidebar.
+- **5 Phân hệ Quản trị Chuyên sâu:**
+  1. 📊 **Tổng quan & Graph KPIs:** Thống kê tổng số User, phân bố giới tính, tỷ lệ xác thực, số cặp Matches, tổng Likes/Passes/Messages, Top sở thích phổ biến nhất và Phân bố địa lý người dùng.
+  2. 👥 **Quản lý Người dùng (User Moderation):** Tìm kiếm theo tên/email/thành phố, lọc theo giới tính/trạng thái; Cấp/thu hồi tích xanh (`is_verified`); Khóa/mở khóa tài khoản vi phạm (`is_banned`); Xem chi tiết hồ sơ; Xóa người dùng và dọn dẹp quan hệ đồ thị liên hoàn (`DETACH DELETE`).
+  3. 🛡️ **Kiểm duyệt Báo cáo (Reports & Safety):** Xem danh sách tài khoản bị người dùng tố cáo vi phạm, lý do báo cáo và xử lý khóa tài khoản nhanh.
+  4. ⚡ **Ghép đôi Thủ công (Admin Force Match):** Công cụ quản trị kết nối ghép đôi trực tiếp 2 tài khoản bất kỳ trên Neo4j, tự động khởi tạo ChatRoom và quan hệ `MATCHED_WITH` hai chiều tức thì.
+  5. 🔧 **Giám sát Hệ thống & Neo4j:** Kiểm tra độ trễ truy vấn CSDL đồ thị (Graph Query Latency ms), trạng thái kết nối máy chủ và phiên làm việc.
+
 ---
 
 ## 🚀 4. HƯỚNG DẪN CÀI ĐẶT & CHẠY ỨNG DỤNG
