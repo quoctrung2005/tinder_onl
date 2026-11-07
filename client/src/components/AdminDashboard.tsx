@@ -3,7 +3,8 @@ import axios from 'axios';
 import {
   LayoutDashboard, Users, ShieldAlert, Zap, Database, MessageCircle,
   RefreshCw, Search, ArrowLeft, Sun, Moon, LogOut, CheckCircle, Ban,
-  Trash2, Eye, Sparkles, Heart, Activity, ShieldCheck, Flame
+  Trash2, Eye, Sparkles, Heart, Activity, ShieldCheck, Flame, Plus,
+  Edit, Key, Download, X, MessageSquare
 } from 'lucide-react';
 import type { UserProfile } from '../types';
 import { ProfileDetailModal } from './ProfileDetailModal';
@@ -14,17 +15,33 @@ interface AdminStats {
   femaleCount: number;
   verifiedCount: number;
   bannedCount: number;
+  adminCount: number;
   totalMatches: number;
   totalLikes: number;
   totalPasses: number;
   totalReports: number;
   totalMessages: number;
   dbLatencyMs: number;
+  ageDemographics?: {
+    '18-21': number;
+    '22-25': number;
+    '26-29': number;
+    '30+': number;
+  };
   topInterests: { name: string; count: number }[];
   cityDistribution: { city: string; count: number }[];
+  goalsDistribution?: { goal: string; count: number }[];
+  recentMatches?: {
+    userA: string;
+    avatarA?: string;
+    userB: string;
+    avatarB?: string;
+    matchedAt: string;
+  }[];
 }
 
 interface ReportItem {
+  id: string;
   reporterId: string;
   reporterName: string;
   reporterAvatar?: string;
@@ -34,6 +51,24 @@ interface ReportItem {
   targetBanned: boolean;
   reason: string;
   createdAt: string;
+}
+
+interface ConversationItem {
+  roomId: string;
+  userA: { id: string; name: string; avatar?: string };
+  userB: { id: string; name: string; avatar?: string };
+  messageCount: number;
+  lastMessage: string;
+  lastActive: string;
+}
+
+interface ChatMessageItem {
+  id: string;
+  content: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  sentAt: string;
 }
 
 interface AdminDashboardProps {
@@ -49,23 +84,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onBackToApp,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'reports' | 'force_match' | 'system'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'conversations' | 'reports' | 'force_match' | 'system'>('overview');
   const [themeMode, setThemeMode] = useState<'dark' | 'light'>('dark');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sidebarSearch, setSidebarSearch] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'banned'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'banned' | 'admin'>('all');
   const [selectedUserForModal, setSelectedUserForModal] = useState<UserProfile | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  // Modals Quản lý
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [passwordResetUser, setPasswordResetUser] = useState<UserProfile | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [inspectingRoom, setInspectingRoom] = useState<ConversationItem | null>(null);
+  const [roomMessages, setRoomMessages] = useState<ChatMessageItem[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   // Form Ghép đôi thủ công
   const [forceUserA, setForceUserA] = useState<string>('');
   const [forceUserB, setForceUserB] = useState<string>('');
   const [matchingInProgress, setMatchingInProgress] = useState<boolean>(false);
+
+  // Form Thêm Người Dùng Mới
+  const [newUserForm, setNewUserForm] = useState({
+    name: '',
+    email: '',
+    password: 'password123',
+    age: 22,
+    gender: 'FEMALE',
+    city: 'Hồ Chí Minh',
+    bio: 'Thành viên mới gia nhập Tinder.',
+    role: 'user',
+    photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    interests: 'Cà phê, Du lịch, Âm nhạc'
+  });
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('tinder_token');
@@ -81,14 +140,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       setLoading(true);
       const headers = getAuthHeaders();
-      const [statsRes, usersRes, reportsRes] = await Promise.all([
+      const [statsRes, usersRes, reportsRes, convsRes] = await Promise.all([
         axios.get(`${API_BASE}/admin/stats`, { headers }),
         axios.get(`${API_BASE}/admin/users`, { headers }),
-        axios.get(`${API_BASE}/admin/reports`, { headers })
+        axios.get(`${API_BASE}/admin/reports`, { headers }),
+        axios.get(`${API_BASE}/admin/conversations`, { headers })
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data || []);
       setReports(reportsRes.data || []);
+      setConversations(convsRes.data || []);
     } catch (err: any) {
       console.error('Lỗi khi nạp dữ liệu Admin:', err);
       showToast('❌ Lỗi xác thực hoặc máy chủ: ' + (err.response?.data?.error || err.message));
@@ -161,6 +222,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  // Đổi vai trò Admin <-> User
+  const handleToggleRole = async (userId: string, userName: string) => {
+    try {
+      const res = await axios.patch(`${API_BASE}/admin/users/${userId}/role`, {}, { headers: getAuthHeaders() });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: res.data.role } : u))
+      );
+      showToast(res.data.message || `Đã cập nhật quyền cho ${userName}`);
+    } catch (err: any) {
+      showToast('❌ ' + (err.response?.data?.error || err.message));
+    }
+  };
+
   // Xóa người dùng
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (!window.confirm(`Xác nhận xóa tài khoản "${userName}" và toàn bộ quan hệ trong Neo4j? Thao tác không thể hoàn tác.`)) {
@@ -171,6 +245,116 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       await axios.delete(`${API_BASE}/admin/users/${userId}`, { headers: getAuthHeaders() });
       setUsers((prev) => prev.filter((u) => u.id !== userId));
       showToast(`🗑️ Đã xóa người dùng "${userName}" thành công.`);
+    } catch (err: any) {
+      showToast('❌ ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // Xử lý tạo người dùng mới
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const interestArr = newUserForm.interests.split(',').map((s) => s.trim()).filter(Boolean);
+      const res = await axios.post(`${API_BASE}/admin/users`, {
+        name: newUserForm.name,
+        email: newUserForm.email,
+        password: newUserForm.password,
+        age: Number(newUserForm.age),
+        gender: newUserForm.gender,
+        city: newUserForm.city,
+        bio: newUserForm.bio,
+        role: newUserForm.role,
+        photos: [newUserForm.photoUrl],
+        interests: interestArr
+      }, { headers: getAuthHeaders() });
+
+      showToast('🎉 ' + res.data.message);
+      setIsCreateUserOpen(false);
+      setNewUserForm({
+        name: '',
+        email: '',
+        password: 'password123',
+        age: 22,
+        gender: 'FEMALE',
+        city: 'Hồ Chí Minh',
+        bio: 'Thành viên mới gia nhập Tinder.',
+        role: 'user',
+        photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+        interests: 'Cà phê, Du lịch, Âm nhạc'
+      });
+      loadData();
+    } catch (err: any) {
+      showToast('❌ ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // Xử lý cập nhật thông tin người dùng
+  const handleEditUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      const res = await axios.put(`${API_BASE}/admin/users/${editingUser.id}`, {
+        name: editingUser.name,
+        age: editingUser.age,
+        gender: editingUser.gender,
+        city: editingUser.city,
+        bio: editingUser.bio,
+        job: editingUser.job,
+        company: editingUser.company,
+        relationship_goal: editingUser.relationship_goal,
+        role: editingUser.role,
+        is_verified: editingUser.is_verified,
+        is_banned: editingUser.is_banned
+      }, { headers: getAuthHeaders() });
+
+      showToast('✅ ' + res.data.message);
+      setEditingUser(null);
+      loadData();
+    } catch (err: any) {
+      showToast('❌ ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // Xử lý đặt lại mật khẩu
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordResetUser || !newPasswordInput) return;
+    try {
+      const res = await axios.post(`${API_BASE}/admin/users/${passwordResetUser.id}/reset-password`, {
+        newPassword: newPasswordInput
+      }, { headers: getAuthHeaders() });
+
+      showToast('🔑 ' + res.data.message);
+      setPasswordResetUser(null);
+      setNewPasswordInput('');
+    } catch (err: any) {
+      showToast('❌ ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // Mở thanh tra kiểm duyệt tin nhắn trong phòng chat
+  const handleInspectRoom = async (conv: ConversationItem) => {
+    setInspectingRoom(conv);
+    setLoadingMessages(true);
+    try {
+      const res = await axios.get(`${API_BASE}/admin/conversations/${conv.roomId}/messages`, {
+        headers: getAuthHeaders()
+      });
+      setRoomMessages(res.data || []);
+    } catch (err: any) {
+      showToast('❌ Lỗi lấy tin nhắn: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  // Xóa tin nhắn vi phạm
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!window.confirm('Xác nhận xóa tin nhắn này khỏi phòng chat?')) return;
+    try {
+      await axios.delete(`${API_BASE}/admin/messages/${msgId}`, { headers: getAuthHeaders() });
+      setRoomMessages((prev) => prev.filter((m) => m.id !== msgId));
+      showToast('🗑️ Đã xóa tin nhắn vi phạm thành công.');
     } catch (err: any) {
       showToast('❌ ' + (err.response?.data?.error || err.message));
     }
@@ -205,6 +389,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  // Xuất dữ liệu người dùng ra CSV
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Tên', 'Email', 'Tuổi', 'Giới tính', 'Thành phố', 'Vai trò', 'Tích xanh', 'Bị khóa', 'Số Likes', 'Số Matches'];
+    const rows = users.map((u) => [
+      u.id,
+      `"${u.name}"`,
+      u.email || '',
+      u.age || '',
+      u.gender,
+      `"${u.city || ''}"`,
+      u.role || 'user',
+      u.is_verified ? 'Có' : 'Không',
+      u.is_banned ? 'Có' : 'Không',
+      u.likesReceived || 0,
+      u.matchesCount || 0
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `tinder_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('📥 Đã xuất báo cáo người dùng CSV thành công!');
+  };
+
   // Lọc người dùng
   const filteredUsers = users.filter((u) => {
     const q = (searchQuery || sidebarSearch).toLowerCase().trim();
@@ -219,6 +431,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     let matchStatus = true;
     if (statusFilter === 'verified') matchStatus = Boolean(u.is_verified);
     if (statusFilter === 'banned') matchStatus = Boolean(u.is_banned);
+    if (statusFilter === 'admin') matchStatus = u.role === 'admin';
 
     return matchSearch && matchGender && matchStatus;
   });
@@ -230,7 +443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       isDark ? 'bg-[#090d16] text-neutral-100' : 'bg-[#eef2f6] text-slate-800'
     }`}>
       {/* =========================================================================
-          1. FLOATING MODERN SIDEBAR (KHỚP 100% PHONG CÁCH TIKTOK VIDEO @snakecode0)
+          1. FLOATING MODERN SIDEBAR (KHỚP VIDEO TIKTOK @snakecode0)
          ========================================================================= */}
       <aside className={`w-72 shrink-0 m-4 rounded-3xl flex flex-col justify-between p-5 border shadow-2xl transition-all duration-300 z-20 ${
         isDark
@@ -238,7 +451,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           : 'bg-white/95 backdrop-blur-xl border-slate-200/80 shadow-slate-300/40'
       }`}>
         {/* PHẦN TRÊN CỦA SIDEBAR */}
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* 1.1 THÔNG TIN ADMIN PROFILE (Avatar, Name, Role) */}
           <div className="flex items-center justify-between pb-3 border-b border-inherit/40">
             <div className="flex items-center gap-3">
@@ -274,7 +487,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
           </div>
 
-          {/* 1.2 Ô TÌM KIẾM SIDEBAR (Search Dashboard...) */}
+          {/* 1.2 Ô TÌM KIẾM SIDEBAR */}
           <div className="relative">
             <Search className={`w-4 h-4 absolute left-3.5 top-3 ${
               isDark ? 'text-neutral-400' : 'text-slate-400'
@@ -293,7 +506,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           {/* 1.3 DANH SÁCH MENU ĐIỀU HƯỚNG HIỆN ĐẠI (Menu Items with Badges) */}
-          <nav className="space-y-1.5">
+          <nav className="space-y-1">
             {[
               {
                 id: 'overview',
@@ -308,6 +521,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 sub: 'Quản lý người dùng',
                 icon: Users,
                 badge: users.length > 0 ? users.length : undefined
+              },
+              {
+                id: 'conversations',
+                label: 'Conversations',
+                sub: 'Giám sát tin nhắn',
+                icon: MessageCircle,
+                badge: conversations.length > 0 ? conversations.length : undefined
               },
               {
                 id: 'reports',
@@ -338,7 +558,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as any)}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer group ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer group ${
                     isActive
                       ? isDark
                         ? 'bg-rose-500/15 text-rose-400 border border-rose-500/40 shadow-sm'
@@ -379,7 +599,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </nav>
         </div>
 
-        {/* 1.4 THANH CÔNG CỤ 4 NÚT VUÔNG BO GÓC DƯỚI CÙNG (KHỚP VIDEO TIKTOK) */}
+        {/* 1.4 THANH CÔNG CỤ 4 NÚT VUÔNG BO GÓC DƯỚI CÙNG */}
         <div className="pt-4 border-t border-inherit/40 flex items-center justify-between gap-2">
           {/* Nút 1: Chuyển đổi Dark / Light Theme */}
           <button
@@ -456,8 +676,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span className="text-xs text-neutral-500">/</span>
               <span className="text-sm font-extrabold capitalize text-rose-500">
                 {activeTab === 'overview' && 'Dashboard Overview & KPIs'}
-                {activeTab === 'users' && 'User Management'}
-                {activeTab === 'reports' && 'Reports & Moderation'}
+                {activeTab === 'users' && 'User Management & Directory'}
+                {activeTab === 'conversations' && 'Live Chat & Message Auditing'}
+                {activeTab === 'reports' && 'Reports & Moderation Queue'}
                 {activeTab === 'force_match' && 'Bilateral Force Match'}
                 {activeTab === 'system' && 'Neo4j AuraDB & Infrastructure'}
               </span>
@@ -502,12 +723,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {/* 6 Thẻ KPI hiện đại */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
                   {[
-                    { label: 'Tổng Users', val: stats?.totalUsers || 0, icon: Users, color: 'from-blue-500 to-indigo-500', trend: '+100% cloud' },
+                    { label: 'Tổng Users', val: stats?.totalUsers || 0, icon: Users, color: 'from-blue-500 to-indigo-500', trend: `${stats?.adminCount || 1} Admins` },
                     { label: 'Đã Xác Thực', val: stats?.verifiedCount || 0, icon: CheckCircle, color: 'from-emerald-500 to-teal-500', trend: 'Tích xanh' },
                     { label: 'Cặp Matches', val: stats?.totalMatches || 0, icon: Heart, color: 'from-rose-500 to-pink-500', trend: 'Mutual' },
                     { label: 'Lượt Thích', val: stats?.totalLikes || 0, icon: Flame, color: 'from-amber-500 to-orange-500', trend: 'Likes' },
                     { label: 'Tin Nhắn', val: stats?.totalMessages || 0, icon: MessageCircle, color: 'from-purple-500 to-violet-500', trend: 'Realtime' },
-                    { label: 'Neo4j Latency', val: `${stats?.dbLatencyMs || 0}ms`, icon: Activity, color: 'from-cyan-500 to-blue-500', trend: 'AuraDB' }
+                    { label: 'Neo4j Latency', val: `${stats?.dbLatencyMs || 0}ms`, icon: Activity, color: 'from-cyan-500 to-blue-500', trend: 'AuraDB Cloud' }
                   ].map((kpi, idx) => {
                     const Icon = kpi.icon;
                     return (
@@ -535,15 +756,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   })}
                 </div>
 
-                {/* 2 Khối Đồ thị: Tỷ lệ Nam/Nữ & Phân bố Thành phố */}
+                {/* Hàng 2: Nhóm Tuổi & Phân Bố Mục Tiêu Hẹn Hò */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Độ tuổi (Age Demographics) */}
+                  <div className={`p-6 rounded-3xl border ${
+                    isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                  }`}>
+                    <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-rose-500" />
+                      <span>Phân Bố Độ Tuổi Thành Viên (Age Demographics)</span>
+                    </h3>
+                    <div className="space-y-3.5">
+                      {Object.entries(stats?.ageDemographics || { '18-21': 6, '22-25': 18, '26-29': 5, '30+': 2 }).map(([ageRange, count]) => {
+                        const total = stats?.totalUsers || 31;
+                        const pct = Math.round((count / total) * 100);
+                        return (
+                          <div key={ageRange}>
+                            <div className="flex justify-between text-xs font-bold mb-1">
+                              <span>Tuổi {ageRange}</span>
+                              <span className="text-neutral-400">{count} người ({pct}%)</span>
+                            </div>
+                            <div className="w-full h-2.5 rounded-full bg-neutral-800 overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all duration-700"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Mục tiêu hẹn hò (Relationship Goals) */}
+                  <div className={`p-6 rounded-3xl border ${
+                    isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                  }`}>
+                    <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-rose-500" />
+                      <span>Mục Tiêu Hẹn Hò (Relationship Goals)</span>
+                    </h3>
+                    <div className="space-y-3">
+                      {(stats?.goalsDistribution && stats.goalsDistribution.length > 0 ? stats.goalsDistribution : [
+                        { goal: '💘 Tìm người yêu lâu dài', count: 18 },
+                        { goal: '🥂 Vừa lâu dài vừa ngắn hạn', count: 8 },
+                        { goal: '☕ Tìm bạn mới / Trò chuyện', count: 4 }
+                      ]).map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs font-semibold">
+                          <span className="truncate pr-2">{item.goal}</span>
+                          <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-bold shrink-0">
+                            {item.count} người
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hàng 3: Tỷ lệ Nam/Nữ & Phân bố Thành phố */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Phân bố Giới tính */}
                   <div className={`p-6 rounded-3xl border ${
                     isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
                   }`}>
                     <h3 className="text-sm font-extrabold mb-4 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-rose-500" />
-                      <span>Phân Bố Giới Tính Trên Đồ Thị</span>
+                      <Users className="w-4 h-4 text-blue-500" />
+                      <span>Tỷ Lệ Giới Tính Trên Đồ Thị</span>
                     </h3>
                     <div className="space-y-4">
                       <div>
@@ -605,7 +883,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Top Sở thích chung */}
+                {/* Hàng 4: Top Sở thích */}
                 <div className={`p-6 rounded-3xl border ${
                   isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
                 }`}>
@@ -635,7 +913,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* ===================== TAB 2: QUẢN LÝ NGƯỜI DÙNG ===================== */}
             {activeTab === 'users' && (
               <div className="space-y-5 max-w-6xl mx-auto">
-                {/* Bộ lọc và tìm kiếm */}
+                {/* Thanh công cụ tìm kiếm, lọc và thêm mới */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="relative flex-1 min-w-[260px]">
                     <Search className="w-4 h-4 absolute left-3.5 top-3 text-neutral-400" />
@@ -673,7 +951,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <option value="all">Tất cả trạng thái</option>
                       <option value="verified">Đã xác minh (Tích xanh)</option>
                       <option value="banned">Bị khóa (Banned)</option>
+                      <option value="admin">Quản trị viên (Admin)</option>
                     </select>
+
+                    {/* Nút Xuất CSV */}
+                    <button
+                      onClick={handleExportCSV}
+                      className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold border flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                        isDark ? 'bg-[#182030] border-neutral-700 text-neutral-200' : 'bg-slate-100 border-slate-200 text-slate-700'
+                      }`}
+                      title="Xuất dữ liệu người dùng ra file CSV"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Xuất CSV</span>
+                    </button>
+
+                    {/* Nút Thêm Người Dùng */}
+                    <button
+                      onClick={() => setIsCreateUserOpen(true)}
+                      className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-rose-600/30 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Thêm User</span>
+                    </button>
                   </div>
                 </div>
 
@@ -687,8 +987,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         isDark ? 'border-neutral-800 bg-[#121824] text-neutral-400' : 'border-slate-200 bg-slate-50 text-slate-500'
                       }`}>
                         <th className="py-3 px-4">Người dùng</th>
-                        <th className="py-3 px-4">Giới tính & Tuổi</th>
+                        <th className="py-3 px-4">Tuổi & Giới tính</th>
                         <th className="py-3 px-4">Thành phố</th>
+                        <th className="py-3 px-4 text-center">Vai trò</th>
                         <th className="py-3 px-4 text-center">Likes Nhận</th>
                         <th className="py-3 px-4 text-center">Matches</th>
                         <th className="py-3 px-4 text-center">Trạng thái</th>
@@ -723,9 +1024,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             }`}>
                               {u.gender === 'MALE' ? 'Nam' : 'Nữ'}
                             </span>
-                            <span>{u.age || 20} tuổi</span>
+                            <span>{u.age || 20}t</span>
                           </td>
                           <td className="py-3 px-4 text-neutral-400">{u.city || 'Chưa cập nhật'}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                              u.role === 'admin'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                : 'bg-neutral-800 text-neutral-400'
+                            }`}>
+                              {u.role || 'user'}
+                            </span>
+                          </td>
                           <td className="py-3 px-4 text-center font-bold text-amber-400">{u.likesReceived || 0}</td>
                           <td className="py-3 px-4 text-center font-bold text-rose-400">{u.matchesCount || 0}</td>
                           <td className="py-3 px-4 text-center">
@@ -738,7 +1048,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             )}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
+                            <div className="flex items-center justify-end gap-1">
                               {/* Xem hồ sơ */}
                               <button
                                 onClick={() => setSelectedUserForModal(u)}
@@ -746,6 +1056,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-300 hover:text-white cursor-pointer"
                               >
                                 <Eye className="w-4 h-4" />
+                              </button>
+
+                              {/* Sửa thông tin */}
+                              <button
+                                onClick={() => setEditingUser(u)}
+                                title="Chỉnh sửa thông tin thành viên"
+                                className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-300 hover:text-amber-400 cursor-pointer"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+
+                              {/* Đổi quyền Admin <-> User */}
+                              <button
+                                onClick={() => handleToggleRole(u.id, u.name)}
+                                title={u.role === 'admin' ? 'Hạ quyền xuống User' : 'Thăng cấp lên Admin'}
+                                className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+                                  u.role === 'admin'
+                                    ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                                    : 'hover:bg-neutral-800 text-neutral-400 hover:text-amber-400'
+                                }`}
+                              >
+                                <ShieldCheck className="w-4 h-4" />
+                              </button>
+
+                              {/* Reset mật khẩu */}
+                              <button
+                                onClick={() => setPasswordResetUser(u)}
+                                title="Đặt lại mật khẩu tài khoản"
+                                className="p-1.5 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-cyan-400 cursor-pointer"
+                              >
+                                <Key className="w-4 h-4" />
                               </button>
 
                               {/* Tích xanh */}
@@ -792,7 +1133,75 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            {/* ===================== TAB 3: BÁO CÁO & KIỂM DUYỆT ===================== */}
+            {/* ===================== TAB 3: GIÁM SÁT HỘI THOẠI & TIN NHẮN ===================== */}
+            {activeTab === 'conversations' && (
+              <div className="space-y-5 max-w-6xl mx-auto">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-extrabold flex items-center gap-2">
+                      <MessageCircle className="w-5 h-5 text-purple-400" />
+                      <span>Giám Sát Hội Thoại & Kiểm Duyệt Nội Dung (:ChatRoom)</span>
+                    </h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Xem các phòng chat đang hoạt động và kiểm duyệt tin nhắn độc hại.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold">
+                    {conversations.length} phòng chat
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {conversations.map((conv) => (
+                    <div
+                      key={conv.roomId}
+                      className={`p-4 rounded-3xl border flex items-center justify-between gap-3 transition-all hover:scale-101 ${
+                        isDark ? 'bg-[#151c2c] border-neutral-800' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        {/* Cặp Avatar lồng nhau */}
+                        <div className="relative w-12 h-10 shrink-0">
+                          <img
+                            src={conv.userA.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'}
+                            alt={conv.userA.name}
+                            className="w-8 h-8 rounded-full object-cover ring-2 ring-neutral-800 absolute top-0 left-0"
+                          />
+                          <img
+                            src={conv.userB.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                            alt={conv.userB.name}
+                            className="w-8 h-8 rounded-full object-cover ring-2 ring-neutral-800 absolute bottom-0 right-0"
+                          />
+                        </div>
+
+                        <div className="overflow-hidden">
+                          <div className="text-xs font-bold truncate">
+                            <span className="text-rose-400">{conv.userA.name}</span> & <span className="text-blue-400">{conv.userB.name}</span>
+                          </div>
+                          <div className="text-[11px] text-neutral-400 truncate mt-0.5">
+                            "{conv.lastMessage}"
+                          </div>
+                          <div className="text-[10px] text-neutral-500 mt-1 flex items-center gap-2">
+                            <span>{conv.messageCount} tin nhắn</span>
+                            <span>•</span>
+                            <span>{new Date(conv.lastActive).toLocaleDateString('vi-VN')}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleInspectRoom(conv)}
+                        className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-bold border border-purple-500/30 shrink-0 transition-all cursor-pointer"
+                      >
+                        Kiểm duyệt
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ===================== TAB 4: BÁO CÁO & KIỂM DUYỆT ===================== */}
             {activeTab === 'reports' && (
               <div className="space-y-5 max-w-4xl mx-auto">
                 <div className="flex items-center justify-between">
@@ -868,7 +1277,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            {/* ===================== TAB 4: GHÉP ĐÔI THỦ CÔNG ===================== */}
+            {/* ===================== TAB 5: GHÉP ĐÔI THỦ CÔNG ===================== */}
             {activeTab === 'force_match' && (
               <div className="max-w-2xl mx-auto space-y-6">
                 <div className="text-center">
@@ -932,7 +1341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            {/* ===================== TAB 5: HỆ THỐNG & NEO4J ===================== */}
+            {/* ===================== TAB 6: HỆ THỐNG & NEO4J ===================== */}
             {activeTab === 'system' && (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div className={`p-6 rounded-3xl border space-y-4 ${
@@ -988,6 +1397,428 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </main>
         </div>
       </div>
+
+      {/* ===================== MODAL 1: THÊM NGƯỜI DÙNG MỚI ===================== */}
+      {isCreateUserOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-lg rounded-3xl p-6 border shadow-2xl space-y-4 ${
+            isDark ? 'bg-[#131926] border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-inherit/40">
+              <h3 className="text-base font-extrabold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-rose-500" />
+                <span>Thêm Thành Viên Mới Vào Đồ Thị Neo4j</span>
+              </h3>
+              <button
+                onClick={() => setIsCreateUserOpen(false)}
+                className="p-1 rounded-xl hover:bg-neutral-800 cursor-pointer text-neutral-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUserSubmit} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold block mb-1">Họ và Tên</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserForm.name}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })}
+                    placeholder="VD: Nguyễn Lan Anh"
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={newUserForm.email}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                    placeholder="lananh@tinder.com"
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold block mb-1">Tuổi</label>
+                  <input
+                    type="number"
+                    min={18}
+                    max={60}
+                    value={newUserForm.age}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, age: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Giới tính</label>
+                  <select
+                    value={newUserForm.gender}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, gender: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  >
+                    <option value="FEMALE">Nữ</option>
+                    <option value="MALE">Nam</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Vai trò</label>
+                  <select
+                    value={newUserForm.role}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold block mb-1">Thành phố</label>
+                  <input
+                    type="text"
+                    value={newUserForm.city}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, city: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Mật khẩu ban đầu</label>
+                  <input
+                    type="text"
+                    value={newUserForm.password}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold block mb-1">Link Ảnh đại diện</label>
+                <input
+                  type="url"
+                  value={newUserForm.photoUrl}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, photoUrl: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold block mb-1">Tiểu sử (Bio)</label>
+                <textarea
+                  rows={2}
+                  value={newUserForm.bio}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, bio: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold block mb-1">Sở thích (ngăn cách bởi dấu phẩy)</label>
+                <input
+                  type="text"
+                  value={newUserForm.interests}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, interests: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateUserOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 font-bold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-md shadow-rose-600/30"
+                >
+                  Tạo Thành Viên Ngay
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL 2: CHỈNH SỬA THÔNG TIN USER ===================== */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-lg rounded-3xl p-6 border shadow-2xl space-y-4 ${
+            isDark ? 'bg-[#131926] border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-inherit/40">
+              <h3 className="text-base font-extrabold flex items-center gap-2">
+                <Edit className="w-5 h-5 text-amber-400" />
+                <span>Chỉnh Sửa Thông Tin ({editingUser.name})</span>
+              </h3>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="p-1 rounded-xl hover:bg-neutral-800 cursor-pointer text-neutral-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditUserSubmit} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold block mb-1">Họ và Tên</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Thành phố</label>
+                  <input
+                    type="text"
+                    value={editingUser.city || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, city: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold block mb-1">Tuổi</label>
+                  <input
+                    type="number"
+                    min={18}
+                    max={60}
+                    value={editingUser.age || 20}
+                    onChange={(e) => setEditingUser({ ...editingUser, age: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Giới tính</label>
+                  <select
+                    value={editingUser.gender}
+                    onChange={(e) => setEditingUser({ ...editingUser, gender: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  >
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold block mb-1">Vai trò</label>
+                  <select
+                    value={editingUser.role || 'user'}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as any })}
+                    className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold block mb-1">Mục tiêu hẹn hò</label>
+                <input
+                  type="text"
+                  value={editingUser.relationship_goal || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, relationship_goal: e.target.value })}
+                  placeholder="VD: 💘 Tìm người yêu lâu dài"
+                  className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold block mb-1">Tiểu sử</label>
+                <textarea
+                  rows={2}
+                  value={editingUser.bio || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border bg-inherit focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-6 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer font-bold">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(editingUser.is_verified)}
+                    onChange={(e) => setEditingUser({ ...editingUser, is_verified: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span>Tích xanh chính chủ</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-rose-400">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(editingUser.is_banned)}
+                    onChange={(e) => setEditingUser({ ...editingUser, is_banned: e.target.checked })}
+                    className="rounded"
+                  />
+                  <span>Khóa tài khoản</span>
+                </label>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 font-bold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-extrabold shadow-md"
+                >
+                  Lưu Thay Đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL 3: ĐẶT LẠI MẬT KHẨU ===================== */}
+      {passwordResetUser && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-3xl p-6 border shadow-2xl space-y-4 ${
+            isDark ? 'bg-[#131926] border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-inherit/40">
+              <h3 className="text-sm font-extrabold flex items-center gap-2">
+                <Key className="w-4 h-4 text-cyan-400" />
+                <span>Đặt Lại Mật Khẩu</span>
+              </h3>
+              <button onClick={() => setPasswordResetUser(null)} className="text-neutral-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-400">
+              Nhập mật khẩu mới cho tài khoản <strong className="text-white">{passwordResetUser.name}</strong> ({passwordResetUser.email}):
+            </p>
+
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-3">
+              <input
+                type="text"
+                required
+                minLength={6}
+                value={newPasswordInput}
+                onChange={(e) => setNewPasswordInput(e.target.value)}
+                placeholder="Mật khẩu mới (tối thiểu 6 ký tự)"
+                className="w-full p-2.5 rounded-xl border bg-inherit text-xs focus:outline-none focus:border-cyan-400"
+              />
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPasswordResetUser(null)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold"
+                >
+                  Xác Nhận Đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL 4: KIỂM DUYỆT TIN NHẮN PHÒNG CHAT ===================== */}
+      {inspectingRoom && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className={`w-full max-w-2xl h-[560px] rounded-3xl p-6 border shadow-2xl flex flex-col justify-between ${
+            isDark ? 'bg-[#131926] border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-800'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-inherit/40 shrink-0">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-5 h-5 text-purple-400" />
+                <div>
+                  <h3 className="text-sm font-extrabold">
+                    Kiểm Duyệt Hội Thoại: {inspectingRoom.userA.name} & {inspectingRoom.userB.name}
+                  </h3>
+                  <div className="text-[11px] text-neutral-400">
+                    Phòng chat ID: <code className="font-mono text-rose-400">{inspectingRoom.roomId}</code>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setInspectingRoom(null)} className="text-neutral-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Danh sách tin nhắn */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar my-2">
+              {loadingMessages ? (
+                <div className="text-center py-12 text-xs text-neutral-400">Đang tải nhật ký tin nhắn...</div>
+              ) : roomMessages.length === 0 ? (
+                <div className="text-center py-12 text-xs text-neutral-400">Chưa có tin nhắn nào trong phòng này.</div>
+              ) : (
+                roomMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs ${
+                      isDark ? 'bg-[#182030] border-neutral-800' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={msg.senderAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'}
+                        alt={msg.senderName}
+                        className="w-8 h-8 rounded-full object-cover shrink-0"
+                      />
+                      <div>
+                        <div className="font-bold flex items-center gap-2">
+                          <span className="text-rose-400">{msg.senderName}</span>
+                          <span className="text-[10px] text-neutral-500 font-normal">
+                            {new Date(msg.sentAt).toLocaleTimeString('vi-VN')}
+                          </span>
+                        </div>
+                        <div className="text-neutral-200 mt-0.5">{msg.content}</div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteMessage(msg.id)}
+                      title="Xóa tin nhắn vi phạm này"
+                      className="p-1.5 rounded-lg hover:bg-rose-600/20 text-neutral-500 hover:text-rose-500 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-inherit/40 flex justify-end shrink-0">
+              <button
+                onClick={() => setInspectingRoom(null)}
+                className="px-5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal xem chi tiết hồ sơ */}
       <ProfileDetailModal
