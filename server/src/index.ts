@@ -10,6 +10,7 @@ import userRoutes from './routes/user.routes';
 import swipeRoutes from './routes/swipe.routes';
 import matchRoutes from './routes/match.routes';
 import chatRoutes from './routes/chat.routes';
+import adminRoutes from './routes/admin.routes';
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use('/api/users', userRoutes);
 app.use('/api', swipeRoutes);
 app.use('/api', matchRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Compatibility route cho GET /api/users/me
 app.use('/api/users/me', authRoutes);

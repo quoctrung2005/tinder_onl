@@ -48,6 +48,9 @@ export interface UserProfile {
 
   // Tính năng Tinder Web Nâng cao
   is_verified?: boolean;                  // Tích xanh chính chủ
+  is_banned?: boolean;                    // Khóa tài khoản vi phạm
+  likesReceived?: number;                 // Số lượt thích nhận được
+  matchesCount?: number;                  // Số lượng tương hợp
   spotify_anthem?: SpotifyAnthem;         // Bài hát chủ đề Spotify
   spotify_top_artists?: string[];        // Các nghệ sĩ hàng đầu
   instagram_photos?: string[];            // Album kết nối Instagram

@@ -18,6 +18,7 @@ interface SidebarProps {
   onOpenGoldModal?: () => void;
   onOpenLikesYou?: () => void;
   likesCount?: number;
+  onOpenAdmin?: () => void;
   onTriggerBoost?: () => void;
   onOpenGraphTuner?: () => void;
   onLogout: () => void;
@@ -40,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenGoldModal,
   onOpenLikesYou,
   likesCount = 0,
+  onOpenAdmin,
   onTriggerBoost,
   onOpenGraphTuner: _onOpenGraphTuner,
   onLogout,
@@ -135,6 +137,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Shield className="w-4 h-4" />
           </button>
+
+          {onOpenAdmin && (
+            <button
+              type="button"
+              onClick={onOpenAdmin}
+              title="Bảng Quản Trị Hệ Thống (Admin Console)"
+              className="w-9 h-9 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 flex items-center justify-center text-amber-300 hover:text-amber-200 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
+            >
+              <Shield className="w-4 h-4 fill-amber-400/30 text-amber-300" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -241,6 +254,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               Chia sẻ Match
             </button>
+
+            {onOpenAdmin && (
+              <button
+                type="button"
+                onClick={onOpenAdmin}
+                className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-rose-500/25 text-amber-300 hover:text-amber-200 text-xs font-extrabold transition-all cursor-pointer text-center border border-amber-400/40 active:scale-98 flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Shield className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+                <span>Bảng Quản Trị Hệ Thống (Admin)</span>
+              </button>
+            )}
 
             <button
               type="button"

@@ -16,6 +16,7 @@ import { SafetyToolkitModal } from './components/SafetyToolkitModal';
 import { GraphTunerModal, type GraphTuningParams } from './components/GraphTunerModal';
 import { MatchGoldModal } from './components/MatchGoldModal';
 import { LikesYouView } from './components/LikesYouView';
+import { AdminDashboard } from './components/AdminDashboard';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -58,6 +59,7 @@ export function App() {
   const [isGoldModalOpen, setIsGoldModalOpen] = useState(false);
   const [isLikesYouMode, setIsLikesYouMode] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(0);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [boostToastMessage, setBoostToastMessage] = useState<string | null>(null);
 
   const handleTriggerBoost = () => {
@@ -258,6 +260,11 @@ export function App() {
     setIsSettingsOpen(false);
   };
 
+  // NẾU ĐANG Ở CHẾ ĐỘ QUẢN TRỊ ADMIN -> HIỂN THỊ ADMIN DASHBOARD
+  if (isAdminOpen) {
+    return <AdminDashboard onBackToApp={() => setIsAdminOpen(false)} />;
+  }
+
   // NẾU CHƯA ĐĂNG NHẬP (KHÔNG CÓ TOKEN) -> HIỂN THỊ MÀN HÌNH CHÀO MỪNG ĐĂNG KÝ / ĐĂNG NHẬP CHUẨN TINDER
   if (!token) {
     return (
@@ -267,6 +274,7 @@ export function App() {
           setCurrentUser(user);
           loadInitialData(newToken);
         }}
+        onOpenAdmin={() => setIsAdminOpen(true)}
       />
     );
   }
@@ -315,6 +323,7 @@ export function App() {
           setActiveMatch(null);
         }}
         likesCount={likesCount}
+        onOpenAdmin={() => setIsAdminOpen(true)}
         onTriggerBoost={handleTriggerBoost}
         onOpenGraphTuner={() => setIsGraphTunerOpen(true)}
         onLogout={handleLogout}

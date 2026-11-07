@@ -9,9 +9,10 @@ import { AntigravityCanvas } from './AntigravityCanvas';
 
 interface TinderLandingProps {
   onAuthSuccess: (token: string, user: UserProfile) => void;
+  onOpenAdmin?: () => void;
 }
 
-export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess }) => {
+export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess, onOpenAdmin }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
@@ -119,8 +120,18 @@ export const TinderLanding: React.FC<TinderLandingProps> = ({ onAuthSuccess }) =
           </div>
         </div>
 
-        {/* NÚT ĐĂNG NHẬP Ở HEADER */}
-        <div className="flex items-center gap-4">
+        {/* NÚT ĐĂNG NHẬP Ở HEADER & NÚT ADMIN CONSOLE */}
+        <div className="flex items-center gap-3">
+          {onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-sm cursor-pointer flex items-center gap-1.5"
+              title="Mở Bảng Điều Khiển Quản Trị Admin"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Admin Console</span>
+            </button>
+          )}
           <span className="hidden sm:inline-block text-xs font-semibold text-neutral-300">
             Tiếng Việt
           </span>
